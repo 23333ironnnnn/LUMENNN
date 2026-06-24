@@ -1,0 +1,57 @@
+[
+  {
+    "id": "s001",
+    "title": "晚风",
+    "artist": "陈婧霏",
+    "genre": "indie",
+    "mood": "calm",
+    "source": "netease",
+    "url": "https://music.163.com/song/",
+    "cover": "",
+    "recommendReason": "它像深夜窗外的风，刚好适合今天的你。"
+  },
+  {
+    "id": "s002",
+    "title": "路过人间",
+    "artist": "郁可唯",
+    "genre": "pop",
+    "mood": "introspective",
+    "source": "netease",
+    "url": "https://music.163.com/song/",
+    "cover": "",
+    "recommendReason": "旋律里有一种温柔的疏离感。"
+  },
+  {
+    "id": "s003",
+    "title": "Lemon",
+    "artist": "米津玄师",
+    "genre": "indie",
+    "mood": "introspective",
+    "source": "netease",
+    "url": "https://music.163.com/song/",
+    "cover": "",
+    "recommendReason": "苦涩和温暖同时存在。"
+  },
+  {
+    "id": "s004",
+    "title": "起风了",
+    "artist": "买辣椒也用券",
+    "genre": "pop",
+    "mood": "calm",
+    "source": "netease",
+    "url": "https://music.163.com/song/",
+    "cover": "",
+    "recommendReason": "像是风在替我说一些说不出口的话。"
+  },
+  {
+    "id": "s005",
+    "title": "Flower Dance",
+    "artist": "DJ OKAWARI",
+    "genre": "lo-fi",
+    "mood": "happy",
+    "source": "netease",
+    "url": "https://music.163.com/song/",
+    "cover": "",
+    "recommendReason": "轻快得像花瓣落在水面上。"
+  }
+]
