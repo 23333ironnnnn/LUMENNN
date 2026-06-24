@@ -1,6 +1,7 @@
 node_modules/
 dist/
 out/
+renderer/out.js
 .DS_Store
 *.log
 .env

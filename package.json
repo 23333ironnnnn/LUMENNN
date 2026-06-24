@@ -1,0 +1,19 @@
+{
+  "name": "lumen",
+  "version": "1.0.0",
+  "description": "A pixel-art electronic spirit desktop companion",
+  "main": "electron/main.js",
+  "scripts": {
+    "build": "esbuild renderer/index.jsx --bundle --outfile=renderer/out.js --jsx=automatic",
+    "start": "npm run build && electron .",
+    "dev": "esbuild renderer/index.jsx --bundle --outfile=renderer/out.js --jsx=automatic --watch"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "esbuild": "^0.21.0"
+  }
+}
