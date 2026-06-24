@@ -10,11 +10,14 @@ const rg = new ResponseGenerator(config);
 const response = rg.generateChatResponse('今天好累啊', 'tired');
 console.assert(response.text && response.text.length > 0, 'should have text');
 console.assert(response.animation, 'should have animation');
+console.assert(typeof response.shouldRemember === 'boolean', 'shouldRemember should be boolean');
 console.log('Response for tired:', response.text, `[${response.animation}]`);
 
-// Test understanding check
-const understands = rg.checkUnderstanding('我今天很开心');
-console.assert(understands === true, 'should understand emotion topics');
+// Test understanding check (probabilistic - should always return a boolean)
+for (let i = 0; i < 100; i++) {
+  const result = rg.checkUnderstanding('我今天很开心');
+  console.assert(typeof result === 'boolean', `checkUnderstanding should return boolean, got ${typeof result}`);
+}
 
 // Test animation selection
 console.assert(rg.selectAnimation('happy') === 'slight_glow', 'happy -> glow');

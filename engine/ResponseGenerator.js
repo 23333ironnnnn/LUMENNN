@@ -55,11 +55,13 @@ class ResponseGenerator {
 
   // Build response text based on personality + emotion
   buildResponse(emotion, personality, commStyle) {
-    const { warmth, directness, distance } = personality;
+    const { distance } = personality;
+    const warmth = personality.warmth;
+    const directness = personality.directness;
     const isPoetic = commStyle.poetic;
 
     const style = this.selectStyle(warmth, distance, isPoetic);
-    return this.fillTemplate(style, emotion, warmth, directness);
+    return this.fillTemplate(style, emotion);
   }
 
   selectStyle(warmth, distance, isPoetic) {
@@ -69,7 +71,7 @@ class ResponseGenerator {
     return 'poetic_abstract';
   }
 
-  fillTemplate(style, emotion, warmth, directness) {
+  fillTemplate(style, emotion) {
     const templates = {
       poetic_abstract: {
         tired: ['频率降低。进入静止。', '你的声音有重量。沉下去了。', '光的波纹变缓了。'],
