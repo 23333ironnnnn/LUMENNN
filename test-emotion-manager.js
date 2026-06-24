@@ -19,4 +19,7 @@ const tags = em.extractTags('tired', '听首歌放松一下');
 console.assert(tags.includes('likes_music'), 'should detect music interest');
 console.assert(tags.includes('often_tired'), 'should detect tired tag');
 
+// Cleanup: reset memory.json
+fs.writeFileSync(path.join(dataDir, 'memory.json'), JSON.stringify({ userTags: {}, days: [], currentDate: '' }), 'utf-8');
+
 console.log('✅ EmotionManager tests passed');

@@ -46,8 +46,9 @@ class EmotionManager {
   }
 
   // Record user emotion (with potential forgetting)
-  rememberUser(emotion, userInput, tags, shouldRemember) {
-    if (!shouldRemember) return;
+  rememberUser(emotion, userInput, tags) {
+    const forgetRate = this.characterConfig.getMemoryStyle().forget_rate || 0;
+    if (Math.random() < forgetRate) return;
 
     const today = this.getTodayKey();
     if (this.memory.currentDate !== today) {
@@ -140,7 +141,11 @@ class EmotionManager {
   // Save memory to disk
   saveMemory() {
     const filePath = path.join(this.dataDir, 'memory.json');
-    fs.writeFileSync(filePath, JSON.stringify(this.memory, null, 2), 'utf-8');
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(this.memory, null, 2), 'utf-8');
+    } catch (err) {
+      console.error('Failed to save memory:', err.message);
+    }
   }
 }
 
