@@ -24,8 +24,8 @@ function ChatPanel({ onClose, onAnimationChange }) {
     setMessages(prev => [...prev, { text, isUser: true }]);
     setIsThinking(true);
 
-    // Simulate thinking delay (500-2000ms random)
-    await new Promise(r => setTimeout(r, 500 + Math.random() * 1500));
+    // Small delay so typing indicator is visible
+    await new Promise(r => setTimeout(r, 300));
 
     try {
       const response = await window.lumenAPI.chat(text);
