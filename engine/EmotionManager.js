@@ -112,6 +112,12 @@ class EmotionManager {
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
   }
 
+  // Get total conversations across all history (for growth tracking)
+  getTotalConversations() {
+    if (!this.memory.days) return 0;
+    return this.memory.days.reduce((sum, day) => sum + day.conversations.length, 0);
+  }
+
   // Get user profile (tag frequency)
   getUserProfile() {
     return this.memory.userTags;

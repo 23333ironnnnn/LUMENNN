@@ -5,6 +5,10 @@ const ResponseGenerator = require('./ResponseGenerator');
 const MusicRecommender = require('./MusicRecommender');
 const SleepSummary = require('./SleepSummary');
 
+// Growth thresholds
+const GROWTH_STAGE_2 = 10;  // 认识: 10+ conversations
+const GROWTH_STAGE_3 = 30;  // 理解: 30+ conversations
+
 class LumenEngine {
   constructor(dataDir) {
     this.dataDir = dataDir;
@@ -28,10 +32,19 @@ class LumenEngine {
     return this;
   }
 
+  // Compute growth level from total conversations
+  getGrowthLevel() {
+    const total = this.emotionManager.getTotalConversations();
+    if (total >= GROWTH_STAGE_3) return 3;
+    if (total >= GROWTH_STAGE_2) return 2;
+    return 1;
+  }
+
   // Handle user chat input
   handleChat(userInput) {
     const emotion = this.emotionManager.identifyEmotion(userInput);
-    const response = this.responseGenerator.generateChatResponse(userInput, emotion);
+    const growthLevel = this.getGrowthLevel();
+    const response = this.responseGenerator.generateChatResponse(userInput, emotion, growthLevel);
     const tags = this.emotionManager.extractTags(emotion, userInput);
     this.emotionManager.rememberUser(emotion, userInput, tags, response.shouldRemember);
 

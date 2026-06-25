@@ -6,21 +6,43 @@ const dataDir = path.join(__dirname, 'data');
 const config = new CharacterConfig(dataDir).load();
 const rg = new ResponseGenerator(config);
 
-// Test basic response
-const response = rg.generateChatResponse('今天好累啊', 'tired');
-console.assert(response.text && response.text.length > 0, 'should have text');
-console.assert(response.animation, 'should have animation');
-console.assert(typeof response.shouldRemember === 'boolean', 'shouldRemember should be boolean');
-console.log('Response for tired:', response.text, `[${response.animation}]`);
-
-// Test understanding check (probabilistic - should always return a boolean)
-for (let i = 0; i < 100; i++) {
-  const result = rg.checkUnderstanding('我今天很开心');
-  console.assert(typeof result === 'boolean', `checkUnderstanding should return boolean, got ${typeof result}`);
+// Test Stage 1 (初生): short, always responds
+for (let i = 0; i < 20; i++) {
+  const r = rg.generateChatResponse('今天好累啊', 'tired', 1);
+  console.assert(r.text && r.text.length > 0, 'stage 1 should have text');
+  console.assert(r.text.length <= 10, `stage 1 should be short, got "${r.text}" (${r.text.length} chars)`);
+  console.assert(r.animation, 'stage 1 should have animation');
+  console.assert(typeof r.shouldRemember === 'boolean', 'shouldRemember should be boolean');
 }
+console.log('Stage 1 (初生) responses: short, always present');
+
+// Test Stage 2 (认识): medium-length sentences
+const stage2Texts = [];
+for (let i = 0; i < 20; i++) {
+  const r = rg.generateChatResponse('今天好累啊', 'tired', 2);
+  console.assert(r.text && r.text.length > 0, 'stage 2 should have text');
+  stage2Texts.push(r.text.length);
+}
+const avgStage2 = stage2Texts.reduce((a, b) => a + b, 0) / stage2Texts.length;
+console.log(`Stage 2 (认识) avg length: ${avgStage2.toFixed(1)} chars`);
+
+// Test Stage 3 (理解): full personality-driven
+const r3 = rg.generateChatResponse('今天好累啊', 'tired', 3);
+console.assert(r3.text && r3.text.length > 0, 'stage 3 should have text');
+console.assert(r3.animation, 'stage 3 should have animation');
+console.log('Stage 3 response:', r3.text, `[${r3.animation}]`);
+
+// Test all emotions for stage 3
+const emotions = ['tired', 'happy', 'sad', 'angry', 'confused', 'anxious', 'neutral'];
+emotions.forEach(em => {
+  const r = rg.generateChatResponse('test', em, 3);
+  console.assert(r.text && r.text.length > 0, `stage 3 ${em} should respond`);
+  console.assert(r.animation, `stage 3 ${em} should have animation`);
+});
 
 // Test animation selection
-console.assert(rg.selectAnimation('happy') === 'slight_glow', 'happy -> glow');
-console.assert(rg.selectAnimation('neutral') === 'idle', 'neutral -> idle');
+console.assert(typeof rg.selectAnimation('happy', 1) === 'string', 'stage 1 animation should be string');
+console.assert(rg.selectAnimation('happy', 3) === 'slight_glow', 'happy stage 3 -> glow');
+console.assert(rg.selectAnimation('neutral', 3) === 'idle', 'neutral stage 3 -> idle');
 
-console.log('✅ ResponseGenerator tests passed');
+console.log('✅ ResponseGenerator growth tests passed');

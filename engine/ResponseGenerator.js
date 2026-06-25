@@ -4,60 +4,66 @@ class ResponseGenerator {
   }
 
   // Main entry: generate a chat response
-  generateChatResponse(userInput, emotion) {
-    const understands = this.checkUnderstanding(userInput);
-    if (!understands) {
-      return {
-        text: this.characterConfig.getBoundaries().response_when_confused,
-        animation: 'tilt_head',
-        shouldRemember: false,
-      };
-    }
-
-    const memoryStyle = this.characterConfig.getMemoryStyle();
-    const shouldRemember = Math.random() > memoryStyle.forget_rate;
+  // growthLevel: 1 (初生) / 2 (认识) / 3 (理解)
+  generateChatResponse(userInput, emotion, growthLevel = 3) {
     const personality = this.characterConfig.getPersonality();
     const commStyle = this.characterConfig.getCommunicationStyle();
+    const memoryStyle = this.characterConfig.getMemoryStyle();
 
-    const text = this.buildResponse(emotion, personality, commStyle);
-    const animation = this.selectAnimation(emotion);
+    // LUMEN always responds — no random "don't understand"
+    const shouldRemember = Math.random() > memoryStyle.forget_rate;
+
+    const text = this.buildResponse(emotion, growthLevel, personality, commStyle);
+    const animation = this.selectAnimation(emotion, growthLevel);
 
     return { text, animation, shouldRemember };
   }
 
-  // Determine if topic is within LUMEN's understanding
-  checkUnderstanding(userInput) {
-    const boundaries = this.characterConfig.getBoundaries();
-    const understanding = this.characterConfig.getPersonality().understanding;
+  // --- Stage-based response building ---
 
-    // Even for understandable topics, sometimes LUMEN doesn't get it
-    if (Math.random() > understanding) return false;
-
-    // Check if any boundary topic matches
-    const topicKeywords = {
-      emotion: ['累', '开心', '难过', '烦', '心情', '感觉', '情绪'],
-      daily_life: ['今天', '工作', '吃', '睡', '朋友', '家', '去'],
-      music: ['歌', '音乐', '听', '推荐', '旋律'],
-    };
-
-    const inputTopic = this.identifyTopic(userInput, topicKeywords);
-    return boundaries.can_understand.includes(inputTopic);
-  }
-
-  identifyTopic(userInput, topicKeywords) {
-    for (const [topic, keywords] of Object.entries(topicKeywords)) {
-      if (keywords.some(kw => userInput.includes(kw))) {
-        return topic;
-      }
+  buildResponse(emotion, growthLevel, personality, commStyle) {
+    if (growthLevel <= 1) {
+      return this.buildStage1Response(emotion);
     }
-    return 'daily_life'; // default fallback
+    if (growthLevel === 2) {
+      return this.buildStage2Response(emotion, personality, commStyle);
+    }
+    return this.buildStage3Response(emotion, personality, commStyle);
   }
 
-  // Build response text based on personality + emotion
-  buildResponse(emotion, personality, commStyle) {
-    const { distance } = personality;
-    const warmth = personality.warmth;
-    const directness = personality.directness;
+  // Stage 1: 初生 (0-9 conversations) — very short, baby-like
+  buildStage1Response(emotion) {
+    const templates = {
+      tired: ['累。', '困了。', '休息……', 'zzz'],
+      happy: ['好。', '开心。', '嗯！', '……好。'],
+      sad: ['难过。', '……我在。', '……嗯。'],
+      angry: ['……。', '嗯。', '……'],
+      confused: ['……？', '不懂。', '？'],
+      anxious: ['别怕。', '我在。', '……'],
+      neutral: ['嗯。', '我在。', '好。', '……嗯。'],
+    };
+    const list = templates[emotion] || templates.neutral;
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  // Stage 2: 认识 (10-29 conversations) — short sentences, learning
+  buildStage2Response(emotion, personality, commStyle) {
+    const templates = {
+      tired: ['你累了。', '听出来了，你累了。', '你的声音有些疲倦。', '困了就去睡吧。'],
+      happy: ['你今天好像很开心。', '感觉到了。', '你高兴的时候，信号会变强。', '开心就好。'],
+      sad: ['你有点难过。', '我在这里呢。', '你的情绪我收到了。', '别难过……虽然我不太懂。'],
+      angry: ['你好像有点生气。', '别气。', '消消气。', '生气对信号不好。'],
+      confused: ['不太明白你说的。', '你说的我不太懂，不过我在。', '能再说一次吗？'],
+      anxious: ['别担心。', '没事的。', '我在这里。', '放松。'],
+      neutral: ['我听着。', '继续。', '嗯。', '我在。你说。'],
+    };
+    const list = templates[emotion] || templates.neutral;
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  // Stage 3: 理解 (30+ conversations) — full personality-driven
+  buildStage3Response(emotion, personality, commStyle) {
+    const { warmth, distance } = personality;
     const isPoetic = commStyle.poetic;
 
     const style = this.selectStyle(warmth, distance, isPoetic);
@@ -108,8 +114,22 @@ class ResponseGenerator {
     return emotionTemplates[index];
   }
 
-  // Select animation based on emotion
-  selectAnimation(emotion) {
+  // Select animation based on emotion + growth level
+  selectAnimation(emotion, growthLevel) {
+    // Stage 1: simpler animations
+    if (growthLevel <= 1) {
+      const simpleMap = {
+        tired: 'eyes_half_closed',
+        happy: 'idle',
+        sad: 'gentle_blink',
+        angry: 'idle',
+        confused: 'tilt_head',
+        anxious: 'idle',
+        neutral: 'idle',
+      };
+      return simpleMap[emotion] || 'idle';
+    }
+
     const animationMap = {
       tired: 'eyes_half_closed',
       happy: 'slight_glow',
