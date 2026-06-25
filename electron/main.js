@@ -20,6 +20,28 @@ function initEngine() {
   ipcMain.on('close-panel', () => {
     if (windowManager.chatOpen) windowManager.closeChat();
   });
+
+  // Window dragging IPC
+  ipcMain.on('drag-start', (_event, offsetX, offsetY) => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (!win) return;
+    const [winX, winY] = win.getPosition();
+    win._dragOffset = { offsetX: offsetX - winX, offsetY: offsetY - winY };
+  });
+
+  ipcMain.on('drag-move', (_event, screenX, screenY) => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (!win || !win._dragOffset) return;
+    win.setPosition(
+      screenX - win._dragOffset.offsetX,
+      screenY - win._dragOffset.offsetY
+    );
+  });
+
+  ipcMain.on('drag-end', () => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (win) win._dragOffset = null;
+  });
 }
 
 app.whenReady().then(() => {

@@ -12,7 +12,8 @@ contextBridge.exposeInMainWorld('lumenAPI', {
   onModeChange: (callback) => {
     ipcRenderer.on('mode-change', (_event, mode) => callback(mode));
   },
-  // Drag support
-  onDragStart: (x, y) => ipcRenderer.send('drag-start', x, y),
-  onDragEnd: () => ipcRenderer.send('drag-end'),
+  // Window dragging
+  dragStart: (offsetX, offsetY) => ipcRenderer.send('drag-start', offsetX, offsetY),
+  dragMove: (screenX, screenY) => ipcRenderer.send('drag-move', screenX, screenY),
+  dragEnd: () => ipcRenderer.send('drag-end'),
 });

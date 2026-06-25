@@ -1,14 +1,14 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import LumenCanvas from './components/LumenCanvas';
 import ChatPanel from './components/ChatPanel';
 import SleepPanel from './components/SleepPanel';
 import DiaryPanel from './components/DiaryPanel';
 
 const MODE = {
-  MINI: 'mini',       // Just LUMEN floating
-  CHAT: 'chat',       // Chat panel open
-  SLEEP: 'sleep',     // Bedtime mode
-  DIARY: 'diary',     // Emotion diary
+  MINI: 'mini',
+  CHAT: 'chat',
+  SLEEP: 'sleep',
+  DIARY: 'diary',
 };
 
 const PANEL_WIDTH = 360;
@@ -18,6 +18,8 @@ function App() {
   const [mode, setMode] = useState(MODE.MINI);
   const [currentAnimation, setCurrentAnimation] = useState('idle');
   const [panelVisible, setPanelVisible] = useState(false);
+  const dragRef = useRef(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
 
   // Listen for mode changes from main process (WindowManager)
   useEffect(() => {
@@ -35,7 +37,44 @@ function App() {
     }
   }, []);
 
+  // Window dragging handlers
+  const handleMouseDown = useCallback((e) => {
+    // Only drag from LUMEN area when in mini mode
+    if (mode !== MODE.MINI) return;
+    dragRef.current = false;
+    dragStartRef.current = { x: e.screenX, y: e.screenY };
+
+    const onMouseMove = (ev) => {
+      const dx = ev.screenX - dragStartRef.current.x;
+      const dy = ev.screenY - dragStartRef.current.y;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        dragRef.current = true;
+      }
+      if (window.lumenAPI && window.lumenAPI.dragMove) {
+        window.lumenAPI.dragMove(ev.screenX, ev.screenY);
+      }
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      if (window.lumenAPI && window.lumenAPI.dragEnd) {
+        window.lumenAPI.dragEnd();
+      }
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+
+    // Notify main of drag start with current window position offset
+    if (window.lumenAPI && window.lumenAPI.dragStart) {
+      window.lumenAPI.dragStart(e.screenX, e.screenY);
+    }
+  }, [mode]);
+
   const handleCanvasClick = useCallback(() => {
+    // Don't open chat if we just dragged
+    if (dragRef.current) return;
     if (mode === MODE.MINI) {
       setMode(MODE.CHAT);
       setPanelVisible(true);
@@ -58,7 +97,6 @@ function App() {
     setPanelVisible(true);
   }, []);
 
-  // Animation state from chat responses
   const handleChatAnimation = useCallback((anim) => {
     if (anim) setCurrentAnimation(anim);
   }, []);
@@ -75,6 +113,7 @@ function App() {
         display: 'flex',
         alignItems: 'flex-start',
       },
+      onMouseDown: handleMouseDown,
     },
     // LUMEN canvas area
     React.createElement(
@@ -90,7 +129,7 @@ function App() {
       },
       React.createElement(
         'div',
-        { onClick: handleCanvasClick, style: { cursor: 'pointer' } },
+        { onClick: handleCanvasClick, style: { cursor: 'grab' } },
         React.createElement(LumenCanvas, { animation: currentAnimation })
       ),
       // Mini controls (visible always)
@@ -106,7 +145,7 @@ function App() {
         React.createElement(
           'button',
           {
-            onClick: handleSleepMode,
+            onClick: (e) => { e.stopPropagation(); handleSleepMode(); },
             title: '睡前模式',
             style: {
               background: 'rgba(124, 92, 252, 0.15)',
@@ -123,7 +162,7 @@ function App() {
         React.createElement(
           'button',
           {
-            onClick: handleDiaryMode,
+            onClick: (e) => { e.stopPropagation(); handleDiaryMode(); },
             title: '情绪日记',
             style: {
               background: 'rgba(124, 92, 252, 0.15)',
