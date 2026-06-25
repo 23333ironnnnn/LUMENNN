@@ -1,8 +1,9 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const LumenEngine = require('../engine/index');
 
-// Keep reference to prevent GC
 let mainWindow = null;
+let engine = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -27,7 +28,32 @@ function createWindow() {
   );
 }
 
-app.whenReady().then(createWindow);
+// Initialize engine and register IPC handlers
+function initEngine() {
+  const dataDir = path.join(__dirname, '..', 'data');
+  engine = new LumenEngine(dataDir).init();
+
+  ipcMain.handle('chat', (_event, text) => {
+    return engine.handleChat(text);
+  });
+
+  ipcMain.handle('sleep', () => {
+    return engine.handleSleep();
+  });
+
+  ipcMain.handle('get-diary', () => {
+    return engine.getDiary();
+  });
+
+  ipcMain.handle('get-engine-status', () => {
+    return engine.getStatus();
+  });
+}
+
+app.whenReady().then(() => {
+  initEngine();
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   app.quit();
