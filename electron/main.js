@@ -1,60 +1,31 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const LumenEngine = require('../engine/index');
+const WindowManager = require('./windowManager');
 
-let mainWindow = null;
+let windowManager = null;
 let engine = null;
 
-function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 160,
-    height: 180,
-    frame: false,
-    transparent: true,
-    alwaysOnTop: true,
-    resizable: false,
-    hasShadow: false,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-
-  mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
-  mainWindow.setPosition(
-    require('electron').screen.getPrimaryDisplay().workAreaSize.width - 200,
-    require('electron').screen.getPrimaryDisplay().workAreaSize.height - 220
-  );
-}
-
-// Initialize engine and register IPC handlers
 function initEngine() {
   const dataDir = path.join(__dirname, '..', 'data');
   engine = new LumenEngine(dataDir).init();
 
-  ipcMain.handle('chat', (_event, text) => {
-    return engine.handleChat(text);
-  });
+  ipcMain.handle('chat', (_event, text) => engine.handleChat(text));
+  ipcMain.handle('sleep', () => engine.handleSleep());
+  ipcMain.handle('get-diary', () => engine.getDiary());
+  ipcMain.handle('get-engine-status', () => engine.getStatus());
 
-  ipcMain.handle('sleep', () => {
-    return engine.handleSleep();
-  });
-
-  ipcMain.handle('get-diary', () => {
-    return engine.getDiary();
-  });
-
-  ipcMain.handle('get-engine-status', () => {
-    return engine.getStatus();
+  // Window control IPC
+  ipcMain.on('toggle-chat', () => windowManager.toggleChat());
+  ipcMain.on('close-panel', () => {
+    if (windowManager.chatOpen) windowManager.closeChat();
   });
 }
 
 app.whenReady().then(() => {
   initEngine();
-  createWindow();
+  windowManager = new WindowManager();
+  windowManager.createWindow();
 });
 
-app.on('window-all-closed', () => {
-  app.quit();
-});
+app.on('window-all-closed', () => app.quit());
