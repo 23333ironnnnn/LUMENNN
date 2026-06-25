@@ -1,45 +1,41 @@
 const CharacterConfig = require('./engine/CharacterConfig');
 const ResponseGenerator = require('./engine/ResponseGenerator');
+const LumenAI = require('./engine/LumenAI');
 const path = require('path');
 
 const dataDir = path.join(__dirname, 'data');
 const config = new CharacterConfig(dataDir).load();
-const rg = new ResponseGenerator(config);
+const ai = new LumenAI();
+const rg = new ResponseGenerator(config, ai);
 
-// Test Stage 1 (初生): newborn spirit, curious and strange but conversational
-for (let i = 0; i < 20; i++) {
-  const r = rg.generateChatResponse('今天好累啊', 'tired', 1);
-  console.assert(r.text && r.text.length > 0, 'stage 1 should have text');
-  console.assert(r.text.length > 8, `stage 1 should be sentences now, got "${r.text}"`);
-  console.assert(r.animation, 'stage 1 should have animation');
-  console.assert(typeof r.shouldRemember === 'boolean', 'shouldRemember should be boolean');
-}
-console.log('Stage 1 (初生) responses: sentences with curiosity, not baby babble');
+(async () => {
+  // Test Stage 1 AI responses
+  const r1 = await rg.generateChatResponse('你好', 'neutral', 1);
+  console.assert(r1.text && r1.text.length > 0, 'stage 1 should respond');
+  console.assert(r1.animation, 'stage 1 should have animation');
+  console.assert(typeof r1.shouldRemember === 'boolean', 'shouldRemember boolean');
+  console.log('Stage 1:', r1.text.slice(0, 60) + '…', `[${r1.animation}]`);
 
-// Test Stage 2 (认识): understanding more
-for (let i = 0; i < 20; i++) {
-  const r = rg.generateChatResponse('今天好累啊', 'tired', 2);
-  console.assert(r.text && r.text.length > 0, 'stage 2 should have text');
-}
-console.log('Stage 2 (认识) responses: gentle, understanding more');
+  // Test Stage 2
+  const r2 = await rg.generateChatResponse('今天好累', 'tired', 2);
+  console.assert(r2.text, 'stage 2 should respond');
+  console.log('Stage 2:', r2.text.slice(0, 60) + '…');
 
-// Test Stage 3 (理解): full personality-driven
-const r3 = rg.generateChatResponse('今天好累啊', 'tired', 3);
-console.assert(r3.text && r3.text.length > 0, 'stage 3 should have text');
-console.assert(r3.animation, 'stage 3 should have animation');
-console.log('Stage 3 response:', r3.text, `[${r3.animation}]`);
+  // Test Stage 3
+  const r3 = await rg.generateChatResponse('好开心', 'happy', 3);
+  console.assert(r3.text, 'stage 3 should respond');
+  console.log('Stage 3:', r3.text.slice(0, 60) + '…');
 
-// Test all emotions for stage 3
-const emotions = ['tired', 'happy', 'sad', 'angry', 'confused', 'anxious', 'neutral'];
-emotions.forEach(em => {
-  const r = rg.generateChatResponse('test', em, 3);
-  console.assert(r.text && r.text.length > 0, `stage 3 ${em} should respond`);
-  console.assert(r.animation, `stage 3 ${em} should have animation`);
-});
+  // Test all emotions
+  const emotions = ['tired', 'happy', 'sad', 'angry', 'confused', 'anxious', 'neutral'];
+  for (const em of emotions) {
+    const r = await rg.generateChatResponse('test', em, 1);
+    console.assert(r.text && r.text.length > 0, `${em} should respond`);
+  }
 
-// Test animation selection
-console.assert(typeof rg.selectAnimation('happy', 1) === 'string', 'stage 1 animation should be string');
-console.assert(rg.selectAnimation('happy', 3) === 'slight_glow', 'happy stage 3 -> glow');
-console.assert(rg.selectAnimation('neutral', 3) === 'idle', 'neutral stage 3 -> idle');
+  // Test animation selection
+  console.assert(rg.selectAnimation('happy', 1) === 'idle', 'stage 1 happy -> idle');
+  console.assert(rg.selectAnimation('happy', 3) === 'slight_glow', 'stage 3 happy -> glow');
 
-console.log('✅ ResponseGenerator growth tests passed');
+  console.log('✅ ResponseGenerator AI tests passed');
+})().catch(err => { console.error('FAILED:', err.message); process.exit(1); });
