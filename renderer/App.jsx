@@ -21,25 +21,42 @@ function App() {
   const dragRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
 
-  // Listen for mode changes from main process (WindowManager)
+  // Listen for mode changes from main process
   useEffect(() => {
     if (window.lumenAPI && window.lumenAPI.onModeChange) {
       window.lumenAPI.onModeChange((newMode) => {
-        if (newMode === 'chat') {
-          setMode(MODE.CHAT);
-          setPanelVisible(true);
-        } else {
+        if (newMode === 'mini') {
           setMode(MODE.MINI);
           setPanelVisible(false);
           setCurrentAnimation('idle');
         }
+        // Chat mode changes (from toggle) just sync visibility
       });
+    }
+  }, []);
+
+  // Tell main process to resize window for a panel
+  const openPanel = useCallback((newMode) => {
+    setMode(newMode);
+    setPanelVisible(true);
+    if (window.lumenAPI && window.lumenAPI.openPanel) {
+      window.lumenAPI.openPanel(newMode);
+    }
+  }, []);
+
+  // Tell main process to shrink window back to mini
+  const closePanel = useCallback(() => {
+    setMode(MODE.MINI);
+    setPanelVisible(false);
+    setCurrentAnimation('idle');
+    if (window.lumenAPI && window.lumenAPI.closePanel) {
+      window.lumenAPI.closePanel();
     }
   }, []);
 
   // Window dragging handlers
   const handleMouseDown = useCallback((e) => {
-    // Only drag from LUMEN area when in mini mode
+    // Only drag from the background in mini mode, not on buttons
     if (mode !== MODE.MINI) return;
     dragRef.current = false;
     dragStartRef.current = { x: e.screenX, y: e.screenY };
@@ -66,36 +83,27 @@ function App() {
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
 
-    // Notify main of drag start with current window position offset
     if (window.lumenAPI && window.lumenAPI.dragStart) {
       window.lumenAPI.dragStart(e.screenX, e.screenY);
     }
   }, [mode]);
 
   const handleCanvasClick = useCallback(() => {
-    // Don't open chat if we just dragged
     if (dragRef.current) return;
     if (mode === MODE.MINI) {
-      setMode(MODE.CHAT);
-      setPanelVisible(true);
+      openPanel(MODE.CHAT);
     }
-  }, [mode]);
+  }, [mode, openPanel]);
 
-  const handleClosePanel = useCallback(() => {
-    setMode(MODE.MINI);
-    setPanelVisible(false);
-    setCurrentAnimation('idle');
-  }, []);
+  const handleSleepMode = useCallback((e) => {
+    e.stopPropagation();
+    openPanel(MODE.SLEEP);
+  }, [openPanel]);
 
-  const handleSleepMode = useCallback(() => {
-    setMode(MODE.SLEEP);
-    setPanelVisible(true);
-  }, []);
-
-  const handleDiaryMode = useCallback(() => {
-    setMode(MODE.DIARY);
-    setPanelVisible(true);
-  }, []);
+  const handleDiaryMode = useCallback((e) => {
+    e.stopPropagation();
+    openPanel(MODE.DIARY);
+  }, [openPanel]);
 
   const handleChatAnimation = useCallback((anim) => {
     if (anim) setCurrentAnimation(anim);
@@ -145,7 +153,7 @@ function App() {
         React.createElement(
           'button',
           {
-            onClick: (e) => { e.stopPropagation(); handleSleepMode(); },
+            onClick: handleSleepMode,
             title: '睡前模式',
             style: {
               background: 'rgba(124, 92, 252, 0.15)',
@@ -162,7 +170,7 @@ function App() {
         React.createElement(
           'button',
           {
-            onClick: (e) => { e.stopPropagation(); handleDiaryMode(); },
+            onClick: handleDiaryMode,
             title: '情绪日记',
             style: {
               background: 'rgba(124, 92, 252, 0.15)',
@@ -186,14 +194,14 @@ function App() {
         style: { marginLeft: '4px' },
       },
       mode === MODE.CHAT && React.createElement(ChatPanel, {
-        onClose: handleClosePanel,
+        onClose: closePanel,
         onAnimationChange: handleChatAnimation,
       }),
       mode === MODE.SLEEP && React.createElement(SleepPanel, {
-        onClose: handleClosePanel,
+        onClose: closePanel,
       }),
       mode === MODE.DIARY && React.createElement(DiaryPanel, {
-        onClose: handleClosePanel,
+        onClose: closePanel,
       })
     )
   );

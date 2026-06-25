@@ -7,7 +7,7 @@ const MINI_HEIGHT = 180;
 class WindowManager {
   constructor() {
     this.window = null;
-    this.chatOpen = false;
+    this.panelOpen = false;
   }
 
   createWindow() {
@@ -20,7 +20,6 @@ class WindowManager {
       frame: false,
       transparent: true,
       alwaysOnTop: true,
-      resizable: false,
       hasShadow: false,
       skipTaskbar: true,
       webPreferences: {
@@ -35,10 +34,10 @@ class WindowManager {
     return this.window;
   }
 
-  // Expand window to fit chat panel
-  openChat() {
-    if (!this.window || this.chatOpen) return;
-    this.chatOpen = true;
+  // Expand window to fit any panel (chat, sleep, diary)
+  openPanel(mode) {
+    if (!this.window || this.panelOpen) return;
+    this.panelOpen = true;
     const [x, y] = this.window.getPosition();
     this.window.setBounds({
       width: MINI_WIDTH + 360,
@@ -46,13 +45,13 @@ class WindowManager {
       x: Math.max(0, x - 360 + MINI_WIDTH),
       y: Math.max(0, y - 160),
     });
-    this.window.webContents.send('mode-change', 'chat');
+    this.window.webContents.send('mode-change', mode);
   }
 
   // Shrink back to mini
-  closeChat() {
-    if (!this.window || !this.chatOpen) return;
-    this.chatOpen = false;
+  closePanel() {
+    if (!this.window || !this.panelOpen) return;
+    this.panelOpen = false;
     const [x, y] = this.window.getPosition();
     this.window.setBounds({
       width: MINI_WIDTH,
@@ -61,15 +60,6 @@ class WindowManager {
       y: y + 160,
     });
     this.window.webContents.send('mode-change', 'mini');
-  }
-
-  // Toggle chat panel
-  toggleChat() {
-    if (this.chatOpen) {
-      this.closeChat();
-    } else {
-      this.openChat();
-    }
   }
 }
 

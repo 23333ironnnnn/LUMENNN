@@ -5,8 +5,8 @@ contextBridge.exposeInMainWorld('lumenAPI', {
   sleep: () => ipcRenderer.invoke('sleep'),
   getDiary: () => ipcRenderer.invoke('get-diary'),
   getEngineStatus: () => ipcRenderer.invoke('get-engine-status'),
-  // Window controls
-  toggleChat: () => ipcRenderer.send('toggle-chat'),
+  // Window panel control
+  openPanel: (mode) => ipcRenderer.send('open-panel', mode),
   closePanel: () => ipcRenderer.send('close-panel'),
   // Listen for mode changes from main process
   onModeChange: (callback) => {

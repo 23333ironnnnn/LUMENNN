@@ -15,11 +15,9 @@ function initEngine() {
   ipcMain.handle('get-diary', () => engine.getDiary());
   ipcMain.handle('get-engine-status', () => engine.getStatus());
 
-  // Window control IPC
-  ipcMain.on('toggle-chat', () => windowManager.toggleChat());
-  ipcMain.on('close-panel', () => {
-    if (windowManager.chatOpen) windowManager.closeChat();
-  });
+  // Window panel control IPC
+  ipcMain.on('open-panel', (_event, mode) => windowManager.openPanel(mode));
+  ipcMain.on('close-panel', () => windowManager.closePanel());
 
   // Window dragging IPC
   ipcMain.on('drag-start', (_event, offsetX, offsetY) => {
