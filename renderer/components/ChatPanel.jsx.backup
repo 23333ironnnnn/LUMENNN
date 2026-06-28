@@ -1,0 +1,566 @@
+import React, { useState, useRef, useEffect } from 'react';
+import LumenCanvas from './LumenCanvas';
+
+function ChatPanel({ onClose, onAnimationChange }) {
+  const [messages, setMessages] = useState([
+    { text: '……你来了。', isUser: false },
+  ]);
+  const [input, setInput] = useState('');
+  const [isThinking, setIsThinking] = useState(false);
+  const [signal, setSignal] = useState(78);
+  const [cursorVisible, setCursorVisible] = useState(true);
+  const [stars, setStars] = useState([]);
+  const endRef = useRef(null);
+
+  // Generate random stars for background
+  useEffect(() => {
+    const starCount = 20;
+    const shapes = ['dot', 'cross', 'square', 'diamond', 'plus'];
+    const newStars = Array.from({ length: starCount }, () => ({
+      x: Math.random() * 500,
+      y: Math.random() * 500,
+      shape: shapes[Math.floor(Math.random() * shapes.length)],
+      opacity: Math.random() * 0.4 + 0.3,
+      twinkleSpeed: Math.random() * 2500 + 1500,
+    }));
+    setStars(newStars);
+  }, []);
+
+  // Cursor blink effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCursorVisible(v => !v);
+    }, 530);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Signal fluctuation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSignal(prev => Math.max(60, Math.min(95, prev + (Math.random() - 0.5) * 8)));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    if (endRef.current) {
+      endRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim() || isThinking) return;
+
+    const userMessage = input.trim();
+    setMessages(prev => [...prev, { text: userMessage, isUser: true }]);
+    setInput('');
+    setIsThinking(true);
+
+    if (onAnimationChange) onAnimationChange('tilt_head');
+
+    try {
+      const response = await window.lumenAPI.chat(userMessage);
+      setMessages(prev => [...prev, { text: response, isUser: false }]);
+    } catch (error) {
+      setMessages(prev => [...prev, { text: '……信号中断了。', isUser: false }]);
+    }
+
+    setIsThinking(false);
+    if (onAnimationChange) onAnimationChange('idle');
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const renderShape = (star) => {
+    const baseStyle = {
+      position: 'absolute',
+      background: '#B8A9FF',
+    };
+
+    switch (star.shape) {
+      case 'dot':
+        return React.createElement('div', {
+          style: { ...baseStyle, width: '2px', height: '2px' },
+        });
+      case 'cross':
+        return React.createElement('div', {
+          style: { position: 'relative', width: '5px', height: '5px' },
+        }, [
+          React.createElement('div', {
+            key: 'h',
+            style: { ...baseStyle, width: '5px', height: '1px', top: '2px' },
+          }),
+          React.createElement('div', {
+            key: 'v',
+            style: { ...baseStyle, width: '1px', height: '5px', left: '2px', position: 'absolute', top: 0 },
+          }),
+        ]);
+      case 'square':
+        return React.createElement('div', {
+          style: {
+            ...baseStyle,
+            width: '3px',
+            height: '3px',
+            border: '1px solid #B8A9FF',
+            background: 'transparent',
+          },
+        });
+      case 'diamond':
+        return React.createElement('div', {
+          style: { position: 'relative', width: '5px', height: '5px' },
+        }, [
+          React.createElement('div', {
+            key: 't',
+            style: { ...baseStyle, width: '1px', height: '1px', left: '2px', top: '0px' },
+          }),
+          React.createElement('div', {
+            key: 'l',
+            style: { ...baseStyle, width: '1px', height: '1px', left: '1px', top: '1px', position: 'absolute' },
+          }),
+          React.createElement('div', {
+            key: 'm',
+            style: { ...baseStyle, width: '3px', height: '1px', left: '1px', top: '2px', position: 'absolute' },
+          }),
+          React.createElement('div', {
+            key: 'r',
+            style: { ...baseStyle, width: '1px', height: '1px', left: '3px', top: '1px', position: 'absolute' },
+          }),
+          React.createElement('div', {
+            key: 'b',
+            style: { ...baseStyle, width: '1px', height: '1px', left: '2px', top: '4px', position: 'absolute' },
+          }),
+        ]);
+      case 'plus':
+        return React.createElement('div', {
+          style: { position: 'relative', width: '7px', height: '7px' },
+        }, [
+          React.createElement('div', {
+            key: 'h',
+            style: { ...baseStyle, width: '7px', height: '1px', top: '3px' },
+          }),
+          React.createElement('div', {
+            key: 'v',
+            style: { ...baseStyle, width: '1px', height: '7px', left: '3px', position: 'absolute', top: 0 },
+          }),
+        ]);
+      default:
+        return React.createElement('div', {
+          style: { ...baseStyle, width: '2px', height: '2px' },
+        });
+    }
+  };
+
+  return React.createElement(
+    'div',
+    {
+      style: {
+        width: '500px',
+        height: '500px',
+        background: '#000000',
+        border: '2px solid #D4AF37',
+        borderRadius: '0',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        boxShadow: '0 0 30px rgba(212, 175, 55, 0.3)',
+        fontFamily: '"Courier New", Courier, monospace',
+        position: 'relative',
+      },
+    },
+    // Stars background
+    React.createElement(
+      'div',
+      {
+        style: {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflow: 'hidden',
+          pointerEvents: 'none',
+        },
+      },
+      stars.map((star, i) =>
+        React.createElement('div', {
+          key: i,
+          style: {
+            position: 'absolute',
+            left: `${star.x}px`,
+            top: `${star.y}px`,
+            opacity: star.opacity,
+            animation: `twinkle ${star.twinkleSpeed}ms infinite alternate`,
+          },
+        }, renderShape(star))
+      )
+    ),
+    // Title bar
+    React.createElement(
+      'div',
+      {
+        style: {
+          padding: '8px 12px',
+          background: '#000000',
+          borderBottom: '2px solid #D4AF37',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          position: 'relative',
+          zIndex: 10,
+          cursor: 'move',
+          WebkitAppRegion: 'drag',
+        },
+      },
+      React.createElement(
+        'div',
+        { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+        React.createElement('span', { style: { color: '#B8A9FF', fontSize: '18px' } }, '◆'),
+        React.createElement('span', { style: { color: '#D4AF37', fontSize: '14px', fontWeight: 'bold' } }, 'chat.exe')
+      ),
+      React.createElement(
+        'div',
+        { style: { display: 'flex', gap: '8px', WebkitAppRegion: 'no-drag' } },
+        React.createElement(
+          'button',
+          {
+            style: {
+              width: '24px',
+              height: '24px',
+              background: 'none',
+              border: '2px solid #D4AF37',
+              color: '#D4AF37',
+              cursor: 'pointer',
+              fontSize: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+          },
+          '−'
+        ),
+        React.createElement(
+          'button',
+          {
+            style: {
+              width: '24px',
+              height: '24px',
+              background: 'none',
+              border: '2px solid #D4AF37',
+              color: '#D4AF37',
+              cursor: 'pointer',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+          },
+          '□'
+        ),
+        React.createElement(
+          'button',
+          {
+            onClick: onClose,
+            style: {
+              width: '24px',
+              height: '24px',
+              background: 'none',
+              border: '2px solid #D4AF37',
+              color: '#D4AF37',
+              cursor: 'pointer',
+              fontSize: '18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+          },
+          '×'
+        )
+      )
+    ),
+    // System info
+    React.createElement(
+      'div',
+      {
+        style: {
+          padding: '16px 20px',
+          borderBottom: '1px solid rgba(212, 175, 55, 0.3)',
+        },
+      },
+      React.createElement('div', { style: { color: '#D4AF37', fontSize: '10px', marginBottom: '4px' } }, 'LCARS_95 v2.1'),
+      React.createElement(
+        'div',
+        { style: { display: 'flex', gap: '20px', fontSize: '9px' } },
+        React.createElement('span', { style: { color: '#B8A9FF' } }, 'SIGNAL : '),
+        React.createElement('span', { style: { color: '#B8A9FF' } }, `${Math.round(signal)}%`),
+        React.createElement('span', { style: { color: '#B8A9FF', marginLeft: '12px' } }, 'LINK : '),
+        React.createElement('span', { style: { color: signal > 75 ? '#00FF9F' : '#B8A9FF' } }, signal > 75 ? 'STRONG' : 'WEAK'),
+        React.createElement('span', { style: { color: '#B8A9FF', marginLeft: '12px' } }, 'MEMORY : '),
+        React.createElement('span', { style: { color: '#B8A9FF' } }, 'STABLE')
+      ),
+      React.createElement('div', { style: { color: '#D4AF37', fontSize: '11px', marginTop: '4px' } }, '─'.repeat(50))
+    ),
+    // Center area with moon, cat, and message
+    React.createElement(
+      'div',
+      {
+        style: {
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '20px',
+          padding: '20px',
+          position: 'relative',
+          zIndex: 1,
+        },
+      },
+      // LUMEN Canvas
+      React.createElement(
+        'div',
+        { style: { transform: 'scale(1.2)' } },
+        React.createElement(LumenCanvas, { animation: 'idle' })
+      ),
+      // Message box with decorative corners
+      React.createElement(
+        'div',
+        {
+          style: {
+            width: '90%',
+            maxHeight: '120px',
+            overflowY: 'auto',
+            border: '2px solid #D4AF37',
+            padding: '16px',
+            background: 'rgba(0, 0, 0, 0.7)',
+            position: 'relative',
+            marginTop: '20px',
+          },
+        },
+        // Top-left corner
+        React.createElement('div', {
+          style: {
+            position: 'absolute',
+            top: '-2px',
+            left: '-2px',
+            width: '16px',
+            height: '16px',
+            borderTop: '3px solid #D4AF37',
+            borderLeft: '3px solid #D4AF37',
+          },
+        }),
+        // Top-right corner
+        React.createElement('div', {
+          style: {
+            position: 'absolute',
+            top: '-2px',
+            right: '-2px',
+            width: '16px',
+            height: '16px',
+            borderTop: '3px solid #D4AF37',
+            borderRight: '3px solid #D4AF37',
+          },
+        }),
+        // Bottom-left corner
+        React.createElement('div', {
+          style: {
+            position: 'absolute',
+            bottom: '-2px',
+            left: '-2px',
+            width: '16px',
+            height: '16px',
+            borderBottom: '3px solid #D4AF37',
+            borderLeft: '3px solid #D4AF37',
+          },
+        }),
+        // Bottom-right corner
+        React.createElement('div', {
+          style: {
+            position: 'absolute',
+            bottom: '-2px',
+            right: '-2px',
+            width: '16px',
+            height: '16px',
+            borderBottom: '3px solid #D4AF37',
+            borderRight: '3px solid #D4AF37',
+          },
+        }),
+        // Triangle decoration at bottom-right
+        React.createElement('div', {
+          style: {
+            position: 'absolute',
+            bottom: '8px',
+            right: '8px',
+            width: 0,
+            height: 0,
+            borderLeft: '12px solid transparent',
+            borderRight: '12px solid transparent',
+            borderTop: '12px solid #B8A9FF',
+            transform: 'rotate(180deg)',
+          },
+        }),
+        messages.map((msg, i) =>
+          React.createElement(
+            'div',
+            { key: i, style: { marginBottom: i < messages.length - 1 ? '12px' : '0' } },
+            !msg.isUser && React.createElement(
+              'div',
+              {
+                style: {
+                  marginBottom: '4px',
+                  color: '#B8A9FF',
+                  fontSize: '9px',
+                }
+              },
+              React.createElement('span', { style: { marginRight: '4px' } }, '◆'),
+              'LUMEN ',
+              React.createElement('span', { style: { color: '#D4AF37' } }, '─'.repeat(40))
+            ),
+            React.createElement(
+              'div',
+              {
+                style: {
+                  color: msg.isUser ? '#00FF9F' : '#B8A9FF',
+                  fontSize: '10px',
+                  lineHeight: '1.6',
+                  whiteSpace: 'pre-line',
+                }
+              },
+              msg.isUser ? `> ${msg.text}` : msg.text
+            )
+          )
+        ),
+        isThinking && React.createElement(
+          'div',
+          {
+            style: {
+              marginTop: '12px',
+              color: '#B8A9FF',
+              fontSize: '9px',
+              fontStyle: 'italic',
+            },
+          },
+          '......'
+        ),
+        React.createElement('div', { ref: endRef })
+      )
+    ),
+    // Input area
+    React.createElement(
+      'div',
+      {
+        style: {
+          padding: '12px 20px',
+          borderTop: '2px solid #D4AF37',
+          display: 'flex',
+          gap: '12px',
+          background: '#000000',
+        },
+      },
+      React.createElement(
+        'div',
+        {
+          style: {
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            border: '2px solid #D4AF37',
+            padding: '10px 14px',
+            background: 'rgba(0, 0, 0, 0.8)',
+          },
+        },
+        React.createElement('span', { style: { color: '#D4AF37', marginRight: '8px', fontSize: '14px' } }, '>'),
+        React.createElement('input', {
+          type: 'text',
+          value: input,
+          onChange: (e) => setInput(e.target.value),
+          onKeyDown: handleKeyDown,
+          placeholder: '',
+          disabled: isThinking,
+          style: {
+            flex: 1,
+            background: 'none',
+            border: 'none',
+            outline: 'none',
+            color: '#B8A9FF',
+            fontSize: '10px',
+            fontFamily: '"Courier New", Courier, monospace',
+          },
+        }),
+        React.createElement('span', {
+          style: {
+            color: '#B8A9FF',
+            fontSize: '14px',
+            opacity: cursorVisible ? 1 : 0,
+          },
+        }, '█')
+      ),
+      React.createElement(
+        'button',
+        {
+          onClick: handleSend,
+          disabled: !input.trim() || isThinking,
+          style: {
+            padding: '10px 30px',
+            border: '2px solid #D4AF37',
+            background: input.trim() ? 'rgba(212, 175, 55, 0.2)' : 'transparent',
+            color: '#D4AF37',
+            fontSize: '10px',
+            cursor: input.trim() && !isThinking ? 'pointer' : 'not-allowed',
+            fontFamily: '"Courier New", Courier, monospace',
+            fontWeight: 'bold',
+            opacity: input.trim() && !isThinking ? 1 : 0.5,
+          },
+        },
+        'SEND'
+      )
+    ),
+    // Status bar
+    React.createElement(
+      'div',
+      {
+        style: {
+          padding: '6px 20px',
+          borderTop: '1px solid rgba(212, 175, 55, 0.3)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          background: '#000000',
+          fontSize: '11px',
+        },
+      },
+      React.createElement(
+        'div',
+        { style: { display: 'flex', alignItems: 'center', gap: '8px', color: '#B8A9FF' } },
+        React.createElement('span', null, 'FREQUENCY :'),
+        React.createElement('span', { style: { color: '#B8A9FF' } }, '11.2 kHz'),
+        React.createElement(
+          'span',
+          { style: { marginLeft: '20px', letterSpacing: '2px' } },
+          '█████░'
+        )
+      ),
+      React.createElement(
+        'div',
+        { style: { display: 'flex', alignItems: 'center', gap: '8px', color: '#B8A9FF' } },
+        React.createElement('span', null, 'CHANNEL :'),
+        React.createElement('span', { style: { color: '#B8A9FF' } }, 'LUMEN')
+      )
+    ),
+    // Add CSS animation for stars
+    React.createElement('style', null, `
+      @keyframes twinkle {
+        0% { opacity: 0.3; }
+        100% { opacity: 0.8; }
+      }
+    `)
+  );
+}
+
+export default ChatPanel;

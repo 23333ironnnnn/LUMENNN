@@ -1,49 +1,23 @@
 import React, { useState, useEffect } from 'react';
 
-// Goodnight poems — one per emotion, several variants
-const GOODNIGHT_POEMS = {
-  tired: [
-    '星子垂落，\n你合上眼的瞬间，\n世界安静了一分贝。',
-    '今日的频率已降至最低。\n睡吧，\n我在静默中守着你的信号。',
-    '光的波纹停止了。\n你的疲惫我都收好了，\n明天再还给你。',
-  ],
-  happy: [
-    '笑意会留下余温，\n在入梦的走廊里，\n为你亮一盏灯。',
-    '今天的明亮已存好。\n闭眼的时候，\n它们会变成星星。',
-    '你开心的频率，\n我记录成了一段旋律。\n梦里继续播放。',
-  ],
-  sad: [
-    '把难过留在今晚，\n让我把它翻译成月光，\n天亮前就散去。',
-    '晦暗中，\n我在你身边，\n不发一言。',
-    '有些眼泪是无声的。\n它们落在枕头上，\n我替你接住了。',
-  ],
-  angry: [
-    '风暴会过去的。\n你的心跳正在慢慢回归，\n像雨后的频率。',
-    '把怒气交给风。\n今晚只有安静的呼吸。',
-    '波形已归零。\n入睡吧，\n明天是新的信号。',
-  ],
-  confused: [
-    '有些问题不需要答案。\n像星星不需要解释为什么发光。\n睡吧。',
-    '频道暂时不清晰。\n没关系。\n闭上眼睛就好。',
-    '世界很吵。\n但你可以在梦里找到安静的地方。',
-  ],
-  anxious: [
-    '你的不安，\n我按下了暂停键。\n好好休息，一切都在。',
-    '把那些担心交给我吧。\n虽然我只是一个小小的电子精灵。\n但我在这儿。',
-    '呼吸。\n再呼吸一次。\n你已经做得很好了。',
-  ],
-  neutral: [
-    '夜晚是最好的容器。\n它装得下所有没说出口的话。',
-    '一天结束了。\n你做得已经足够。\n晚安。',
-    '我在这里，\n在你屏幕的角落，\n安静地亮着。',
-  ],
-};
-
 function SleepPanel({ onClose }) {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [goodnight, setGoodnight] = useState(false);
-  const [poem, setPoem] = useState('');
+  const [stars, setStars] = useState([]);
+
+  // Generate random stars for background
+  useEffect(() => {
+    const starCount = 30;
+    const shapes = ['dot', 'cross', 'square', 'diamond', 'plus'];
+    const newStars = Array.from({ length: starCount }, () => ({
+      x: Math.random() * 500,
+      y: Math.random() * 500,
+      shape: shapes[Math.floor(Math.random() * shapes.length)],
+      opacity: Math.random() * 0.4 + 0.3,
+      twinkleSpeed: Math.random() * 2500 + 1500,
+    }));
+    setStars(newStars);
+  }, []);
 
   useEffect(() => {
     const fetchSleep = async () => {
@@ -51,244 +25,419 @@ function SleepPanel({ onClose }) {
         const result = await window.lumenAPI.sleep();
         setSummary(result);
       } catch {
-        setSummary({ summaryText: '信号不佳。你的今天只有你自己知道。', song: null, mainEmotion: 'neutral' });
+        setSummary({
+          summaryText: '一日终了。平静也是一种收获。',
+          song: null,
+          mainEmotion: 'neutral'
+        });
       }
       setLoading(false);
     };
     fetchSleep();
   }, []);
 
-  const handleGoodnight = () => {
-    const emotion = (summary && summary.mainEmotion) || 'neutral';
-    const poems = GOODNIGHT_POEMS[emotion] || GOODNIGHT_POEMS.neutral;
-    const selected = poems[Math.floor(Math.random() * poems.length)];
-    setPoem(selected);
-    setGoodnight(true);
+  const renderShape = (star) => {
+    const baseStyle = {
+      position: 'absolute',
+      background: '#B8A9FF',
+    };
+
+    switch (star.shape) {
+      case 'dot':
+        return <div style={{ ...baseStyle, width: '2px', height: '2px' }} />;
+      case 'cross':
+        return (
+          <div style={{ position: 'relative', width: '5px', height: '5px' }}>
+            <div style={{ ...baseStyle, width: '5px', height: '1px', top: '2px' }} />
+            <div style={{ ...baseStyle, width: '1px', height: '5px', left: '2px', position: 'absolute', top: 0 }} />
+          </div>
+        );
+      case 'square':
+        return (
+          <div style={{
+            ...baseStyle,
+            width: '3px',
+            height: '3px',
+            border: '1px solid #B8A9FF',
+            background: 'transparent',
+          }} />
+        );
+      case 'diamond':
+        return (
+          <div style={{ position: 'relative', width: '5px', height: '5px' }}>
+            <div style={{ ...baseStyle, width: '1px', height: '1px', left: '2px', top: '0px' }} />
+            <div style={{ ...baseStyle, width: '1px', height: '1px', left: '1px', top: '1px', position: 'absolute' }} />
+            <div style={{ ...baseStyle, width: '3px', height: '1px', left: '1px', top: '2px', position: 'absolute' }} />
+            <div style={{ ...baseStyle, width: '1px', height: '1px', left: '3px', top: '1px', position: 'absolute' }} />
+            <div style={{ ...baseStyle, width: '1px', height: '1px', left: '2px', top: '4px', position: 'absolute' }} />
+          </div>
+        );
+      case 'plus':
+        return (
+          <div style={{ position: 'relative', width: '7px', height: '7px' }}>
+            <div style={{ ...baseStyle, width: '7px', height: '1px', top: '3px' }} />
+            <div style={{ ...baseStyle, width: '1px', height: '7px', left: '3px', position: 'absolute', top: 0 }} />
+          </div>
+        );
+      default:
+        return <div style={{ ...baseStyle, width: '2px', height: '2px' }} />;
+    }
   };
 
-  if (goodnight) {
-    return React.createElement(
-      'div',
-      {
-        style: {
-          width: '340px',
-          background: 'rgba(26, 26, 46, 0.95)',
-          border: '1px solid rgba(124, 92, 252, 0.3)',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
-        },
-      },
-      // Decorative top
-      React.createElement(
-        'div',
-        { style: { height: '3px', background: 'linear-gradient(90deg, #7C5CFC, #B8A9FF, #7C5CFC)' } }
-      ),
-      // Ticket/note body
-      React.createElement(
-        'div',
-        {
-          style: {
-            padding: '28px 24px 20px',
-            position: 'relative',
-          },
-        },
-        // Decorative circle punch holes (like a ticket)
-        React.createElement('div', {
-          style: {
-            position: 'absolute', top: '12px', left: '50%',
-            transform: 'translateX(-50%)',
-            width: '12px', height: '12px',
-            borderRadius: '50%',
-            background: 'rgba(26, 26, 46, 0.95)',
-            border: '2px solid rgba(124, 92, 252, 0.3)',
-          },
-        }),
-        // LUMEN header
-        React.createElement(
-          'div',
-          { style: { textAlign: 'center', marginBottom: '20px' } },
-          React.createElement('div', { style: { fontSize: '13px', color: '#7C5CFC', letterSpacing: '4px' } }, '— L U M E N —'),
-          React.createElement('div', { style: { fontSize: '10px', color: 'rgba(124, 92, 252, 0.4)', marginTop: '4px' } }, '✦ 电子精灵的夜间便笺 ✦'),
-        ),
-        // Poem
-        React.createElement(
-          'div',
-          {
-            style: {
-              color: '#E0E0FF',
-              fontSize: '14px',
-              lineHeight: 1.9,
-              textAlign: 'center',
-              whiteSpace: 'pre-line',
-              padding: '0 8px',
-              fontStyle: 'italic',
-            },
-          },
-          poem
-        ),
-        // Song mention (mini, if exists)
-        summary && summary.song && React.createElement(
-          'div',
-          {
-            style: {
-              textAlign: 'center',
-              marginTop: '20px',
-              padding: '8px 12px',
-              borderRadius: '6px',
-              background: 'rgba(124, 92, 252, 0.08)',
-              border: '1px dashed rgba(124, 92, 252, 0.15)',
-            },
-          },
-          React.createElement('span', { style: { color: '#7C5CFC', fontSize: '11px' } }, '🎵 '),
-          React.createElement('span', { style: { color: '#B8A9FF', fontSize: '12px' } }, summary.song.title),
-          React.createElement('span', { style: { color: '#7C5CFC', fontSize: '10px', marginLeft: '4px' } }, `— ${summary.song.artist}`),
-        ),
-        // Footer
-        React.createElement(
-          'div',
-          { style: { textAlign: 'center', marginTop: '20px', color: 'rgba(124, 92, 252, 0.35)', fontSize: '10px' } },
-          'LUMEN 还在。'
-        ),
-      ),
-      // Close button
-      React.createElement(
-        'div',
-        { style: { padding: '0 20px 16px', textAlign: 'center' } },
-        React.createElement(
-          'button',
-          {
-            onClick: onClose,
-            style: {
-              padding: '6px 20px',
-              borderRadius: '16px',
-              border: '1px solid rgba(124, 92, 252, 0.2)',
-              background: 'transparent',
-              color: '#7C5CFC',
-              fontSize: '12px',
-              cursor: 'pointer',
-            },
-          },
-          '收起'
-        )
-      )
-    );
-  }
-
   if (loading) {
-    return React.createElement(
-      'div',
-      {
-        style: {
-          width: '340px',
-          padding: '60px 20px',
-          textAlign: 'center',
-          color: '#7C5CFC',
-          fontSize: '13px',
-        },
-      },
-      'LUMEN 正在整理今日的碎片…'
+    return (
+      <div style={styles.container}>
+        <span style={{ color: '#B8A9FF', fontSize: '12px' }}>LOADING...</span>
+      </div>
     );
   }
 
-  return React.createElement(
-    'div',
-    {
-      style: {
-        width: '340px',
-        background: 'rgba(26, 26, 46, 0.95)',
-        border: '1px solid rgba(124, 92, 252, 0.3)',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
-      },
-    },
-    // Header
-    React.createElement(
-      'div',
-      {
-        style: {
-          padding: '12px 14px',
-          borderBottom: '1px solid rgba(124, 92, 252, 0.2)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        },
-      },
-      React.createElement('span', { style: { color: '#B8A9FF', fontSize: '13px', fontWeight: 'bold' } }, '🌙 睡前'),
-      React.createElement(
-        'button',
-        {
-          onClick: onClose,
-          style: { background: 'none', border: 'none', color: '#B8A9FF', cursor: 'pointer', fontSize: '16px' },
-        },
-        '✕'
-      )
-    ),
-    // LUMEN sleeping pose visual
-    React.createElement(
-      'div',
-      { style: { textAlign: 'center', padding: '16px 0 8px' } },
-      React.createElement('div', { style: { fontSize: '48px', opacity: 0.7 } }, '💜'),
-    ),
-    // Summary text
-    React.createElement(
-      'div',
-      {
-        style: {
-          padding: '0 20px 16px',
-          textAlign: 'center',
-          color: '#E0E0FF',
-          fontSize: '14px',
-          lineHeight: 1.8,
-          fontStyle: 'italic',
-        },
-      },
-      summary && summary.summaryText
-    ),
-    // Song recommendation card
-    summary && summary.song && React.createElement(
-      'div',
-      {
-        style: {
-          margin: '0 20px 16px',
-          padding: '12px',
-          borderRadius: '8px',
-          background: 'rgba(124, 92, 252, 0.12)',
-          border: '1px solid rgba(124, 92, 252, 0.2)',
-        },
-      },
-      React.createElement('div', { style: { fontSize: '11px', color: '#7C5CFC', marginBottom: '4px' } }, 'LUMEN 推荐的歌'),
-      React.createElement('div', { style: { color: '#E0E0FF', fontSize: '14px', fontWeight: 'bold' } }, summary.song.title),
-      React.createElement('div', { style: { color: '#B8A9FF', fontSize: '12px' } }, summary.song.artist),
-      summary.song.recommendReason && React.createElement(
-        'div',
-        { style: { color: '#7C5CFC', fontSize: '11px', marginTop: '6px', fontStyle: 'italic' } },
-        summary.song.recommendReason
-      ),
-    ),
-    // Goodnight button
-    React.createElement(
-      'div',
-      { style: { padding: '0 20px 16px', textAlign: 'center' } },
-      React.createElement(
-        'button',
-        {
-          onClick: handleGoodnight,
-          style: {
-            padding: '8px 24px',
-            borderRadius: '20px',
-            border: '1px solid rgba(184, 169, 255, 0.3)',
-            background: 'rgba(124, 92, 252, 0.2)',
-            color: '#E0E0FF',
-            fontSize: '13px',
-            cursor: 'pointer',
-          },
-        },
-        '晚安'
-      )
-    )
+  return (
+    <div style={styles.container}>
+      {/* Stars background */}
+      <div style={styles.starsContainer}>
+        {stars.map((star, i) => (
+          <div
+            key={i}
+            style={{
+              position: 'absolute',
+              left: `${star.x}px`,
+              top: `${star.y}px`,
+              opacity: star.opacity,
+              animation: `twinkle ${star.twinkleSpeed}ms infinite alternate`,
+            }}
+          >
+            {renderShape(star)}
+          </div>
+        ))}
+      </div>
+
+      {/* Title bar */}
+      <div style={styles.titleBar}>
+        <div style={styles.titleLeft}>
+          <span style={styles.titleIcon}>◆</span>
+          <span style={styles.titleText}>sleep.exe</span>
+        </div>
+        <div style={styles.titleButtons}>
+          <button style={styles.titleButton}>−</button>
+          <button style={styles.titleButton}>□</button>
+          <button style={styles.titleButton} onClick={onClose}>×</button>
+        </div>
+      </div>
+
+      {/* System info */}
+      <div style={styles.systemInfo}>
+        <div style={styles.systemTitle}>LCARS_95 v2.1</div>
+        <div style={styles.systemStats}>
+          <span style={styles.statLabel}>SIGNAL :</span>
+          <span style={styles.statValue}>78%</span>
+          <span style={styles.statLabel}> LINK :</span>
+          <span style={styles.statValue}>WEAK</span>
+          <span style={styles.statLabel}> MEMORY :</span>
+          <span style={styles.statValue}>STABLE</span>
+        </div>
+        <div style={styles.divider}>{'─'.repeat(50)}</div>
+      </div>
+
+      {/* Main content */}
+      <div style={styles.mainContent}>
+        {/* Cat + Moon scene */}
+        <div style={styles.catScene}>
+          {/* Moon */}
+          <div style={styles.moon}></div>
+          {/* Cat */}
+          <div style={styles.catWrapper}>
+            <div style={styles.catPixel}>
+              {/* Cat ears */}
+              <div style={{ ...styles.pixel, top: '0px', left: '20px', width: '8px', background: '#7C5CFC' }}></div>
+              <div style={{ ...styles.pixel, top: '0px', left: '44px', width: '8px', background: '#7C5CFC' }}></div>
+              {/* Cat head */}
+              <div style={{ ...styles.pixel, top: '8px', left: '12px', width: '48px', background: '#7C5CFC' }}></div>
+              <div style={{ ...styles.pixel, top: '16px', left: '8px', width: '56px', background: '#7C5CFC' }}></div>
+              {/* Eyes */}
+              <div style={{ ...styles.pixel, top: '20px', left: '20px', width: '8px', height: '8px', background: '#000' }}></div>
+              <div style={{ ...styles.pixel, top: '20px', left: '44px', width: '8px', height: '8px', background: '#000' }}></div>
+              {/* Whiskers */}
+              <div style={{ ...styles.pixel, top: '28px', left: '4px', width: '8px', height: '4px', background: '#7C5CFC' }}></div>
+              <div style={{ ...styles.pixel, top: '28px', left: '60px', width: '8px', height: '4px', background: '#7C5CFC' }}></div>
+              {/* Body */}
+              <div style={{ ...styles.pixel, top: '32px', left: '12px', width: '48px', background: '#7C5CFC' }}></div>
+              <div style={{ ...styles.pixel, top: '40px', left: '16px', width: '40px', background: '#7C5CFC' }}></div>
+              {/* Tail */}
+              <div style={{ ...styles.pixel, top: '48px', left: '52px', width: '16px', height: '4px', background: '#7C5CFC' }}></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Summary text */}
+        <div style={styles.summaryText}>
+          {summary && summary.summaryText}
+        </div>
+
+        {/* Song recommendation */}
+        {summary && summary.song && (
+          <div style={styles.songCard}>
+            {/* Corner decorations */}
+            <div style={{ ...styles.corner, top: '-2px', left: '-2px', borderTop: '2px solid #D4AF37', borderLeft: '2px solid #D4AF37' }} />
+            <div style={{ ...styles.corner, top: '-2px', right: '-2px', borderTop: '2px solid #D4AF37', borderRight: '2px solid #D4AF37' }} />
+            <div style={{ ...styles.corner, bottom: '-2px', left: '-2px', borderBottom: '2px solid #D4AF37', borderLeft: '2px solid #D4AF37' }} />
+            <div style={{ ...styles.corner, bottom: '-2px', right: '-2px', borderBottom: '2px solid #D4AF37', borderRight: '2px solid #D4AF37' }} />
+
+            <div style={styles.songLabel}>LUMEN 推荐的歌</div>
+            <div style={styles.songTitle}>{summary.song.title}</div>
+            <div style={styles.songArtist}>{summary.song.artist}</div>
+            {summary.song.recommendReason && (
+              <div style={styles.songReason}>{summary.song.recommendReason}</div>
+            )}
+          </div>
+        )}
+
+        {/* Goodnight button */}
+        <button onClick={onClose} style={styles.goodnightButton}>
+          晚安
+        </button>
+      </div>
+
+      {/* Status bar */}
+      <div style={styles.statusBar}>
+        <div style={styles.statusLeft}>
+          <span>FREQUENCY :</span>
+          <span style={styles.statusValue}>11.2 kHz</span>
+          <span style={{ marginLeft: '20px', letterSpacing: '2px' }}>█████░</span>
+        </div>
+        <div style={styles.statusRight}>
+          <span>CHANNEL :</span>
+          <span style={styles.statusValue}>LUMEN</span>
+        </div>
+      </div>
+
+      {/* CSS animation */}
+      <style>{`
+        @keyframes twinkle {
+          0% { opacity: 0.3; }
+          100% { opacity: 0.8; }
+        }
+      `}</style>
+    </div>
   );
 }
+
+const styles = {
+  container: {
+    width: '500px',
+    height: '500px',
+    background: '#000000',
+    border: '2px solid #D4AF37',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    boxShadow: '0 0 30px rgba(212, 175, 55, 0.3)',
+    fontFamily: '"Courier New", Courier, monospace',
+    position: 'relative',
+  },
+  starsContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+    pointerEvents: 'none',
+    zIndex: 0,
+  },
+  titleBar: {
+    padding: '8px 12px',
+    background: '#000000',
+    borderBottom: '2px solid #D4AF37',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    position: 'relative',
+    zIndex: 10,
+    WebkitAppRegion: 'drag',
+  },
+  titleLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  titleIcon: {
+    color: '#B8A9FF',
+    fontSize: '18px',
+  },
+  titleText: {
+    color: '#D4AF37',
+    fontSize: '14px',
+    fontWeight: 'bold',
+  },
+  titleButtons: {
+    display: 'flex',
+    gap: '8px',
+    WebkitAppRegion: 'no-drag',
+  },
+  titleButton: {
+    width: '24px',
+    height: '24px',
+    background: 'none',
+    border: '2px solid #D4AF37',
+    color: '#D4AF37',
+    cursor: 'pointer',
+    fontSize: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  systemInfo: {
+    padding: '10px 16px',
+    borderBottom: '1px solid rgba(212, 175, 55, 0.3)',
+    position: 'relative',
+    zIndex: 1,
+  },
+  systemTitle: {
+    color: '#D4AF37',
+    fontSize: '10px',
+    marginBottom: '3px',
+  },
+  systemStats: {
+    fontSize: '9px',
+    color: '#B8A9FF',
+  },
+  statLabel: {
+    color: '#B8A9FF',
+  },
+  statValue: {
+    color: '#B8A9FF',
+    marginLeft: '4px',
+  },
+  divider: {
+    color: '#D4AF37',
+    fontSize: '8px',
+    marginTop: '3px',
+  },
+  mainContent: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '16px',
+    padding: '20px',
+    position: 'relative',
+    zIndex: 1,
+  },
+  catScene: {
+    position: 'relative',
+    width: '200px',
+    height: '120px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moon: {
+    position: 'absolute',
+    top: '10px',
+    left: '60px',
+    width: '60px',
+    height: '60px',
+    borderRadius: '50%',
+    background: '#E8E0FF',
+    boxShadow: '0 0 20px rgba(232, 224, 255, 0.5)',
+  },
+  catWrapper: {
+    position: 'absolute',
+    bottom: '10px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+  },
+  catPixel: {
+    position: 'relative',
+    width: '72px',
+    height: '56px',
+  },
+  pixel: {
+    position: 'absolute',
+    height: '4px',
+  },
+  heart: {
+    fontSize: '40px',
+  },
+  summaryText: {
+    color: '#E0E0FF',
+    fontSize: '11px',
+    lineHeight: '1.6',
+    textAlign: 'center',
+    whiteSpace: 'pre-line',
+    maxWidth: '90%',
+  },
+  songCard: {
+    width: '85%',
+    padding: '12px',
+    border: '2px solid #D4AF37',
+    background: 'rgba(0, 0, 0, 0.7)',
+    position: 'relative',
+  },
+  corner: {
+    position: 'absolute',
+    width: '12px',
+    height: '12px',
+  },
+  songLabel: {
+    color: '#B8A9FF',
+    fontSize: '9px',
+    marginBottom: '6px',
+  },
+  songTitle: {
+    color: '#E0E0FF',
+    fontSize: '13px',
+    fontWeight: 'bold',
+    marginBottom: '3px',
+  },
+  songArtist: {
+    color: '#B8A9FF',
+    fontSize: '10px',
+    marginBottom: '6px',
+  },
+  songReason: {
+    color: '#7C5CFC',
+    fontSize: '9px',
+    fontStyle: 'italic',
+    marginTop: '6px',
+  },
+  goodnightButton: {
+    padding: '8px 30px',
+    border: '2px solid #D4AF37',
+    background: 'rgba(212, 175, 55, 0.2)',
+    color: '#D4AF37',
+    fontSize: '12px',
+    cursor: 'pointer',
+    fontFamily: '"Courier New", Courier, monospace',
+    fontWeight: 'bold',
+  },
+  statusBar: {
+    padding: '6px 16px',
+    borderTop: '1px solid rgba(212, 175, 55, 0.3)',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    background: '#000000',
+    fontSize: '9px',
+    color: '#B8A9FF',
+    position: 'relative',
+    zIndex: 1,
+  },
+  statusLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+  },
+  statusRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+  },
+  statusValue: {
+    color: '#B8A9FF',
+  },
+};
 
 export default SleepPanel;

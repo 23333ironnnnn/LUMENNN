@@ -12,7 +12,8 @@ const MODE = {
 };
 
 const PANEL_WIDTH = 360;
-const CANVAS_WIDTH = 160;
+const CANVAS_WIDTH = 53;  // 160 / 3
+const CANVAS_HEIGHT = 60; // 180 / 3
 
 function App() {
   const [mode, setMode] = useState(MODE.MINI);
@@ -20,6 +21,21 @@ function App() {
   const [panelVisible, setPanelVisible] = useState(false);
   const dragRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
+
+  // Handle cat click - random reaction
+  const handleCatClick = useCallback(() => {
+    if (mode !== MODE.MINI) return; // Only in mini mode
+
+    const reactions = ['happy', 'nod', 'gentle_blink', 'slight_glow', 'jump', 'pulse'];
+    const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+
+    setCurrentAnimation(randomReaction);
+
+    // Return to idle after animation
+    setTimeout(() => {
+      setCurrentAnimation('idle');
+    }, 2000);
+  }, [mode]);
 
   // Listen for mode changes from main process
   useEffect(() => {
@@ -109,6 +125,14 @@ function App() {
     if (anim) setCurrentAnimation(anim);
   }, []);
 
+  const handleModeSwitch = useCallback((newMode) => {
+    if (newMode === 'sleep') {
+      openPanel(MODE.SLEEP);
+    } else if (newMode === 'diary') {
+      openPanel(MODE.DIARY);
+    }
+  }, [openPanel]);
+
   const isMini = mode === MODE.MINI;
   const showPanel = panelVisible && mode !== MODE.MINI;
 
@@ -117,7 +141,7 @@ function App() {
     {
       style: {
         width: isMini ? `${CANVAS_WIDTH}px` : `${CANVAS_WIDTH + PANEL_WIDTH}px`,
-        height: isMini ? '180px' : 'auto',
+        height: isMini ? `${CANVAS_HEIGHT}px` : 'auto',
         display: 'flex',
         alignItems: 'flex-start',
       },
@@ -138,53 +162,11 @@ function App() {
       React.createElement(
         'div',
         { onClick: handleCanvasClick, style: { cursor: 'grab' } },
-        React.createElement(LumenCanvas, { animation: currentAnimation })
+        React.createElement(LumenCanvas, {
+          animation: currentAnimation,
+          onClick: handleCatClick
+        })
       ),
-      // Mini controls (visible always)
-      mode === MODE.MINI && React.createElement(
-        'div',
-        {
-          style: {
-            display: 'flex',
-            gap: '4px',
-            marginTop: '4px',
-          },
-        },
-        React.createElement(
-          'button',
-          {
-            onClick: handleSleepMode,
-            title: '睡前模式',
-            style: {
-              background: 'rgba(124, 92, 252, 0.15)',
-              border: '1px solid rgba(124, 92, 252, 0.2)',
-              borderRadius: '4px',
-              color: '#B8A9FF',
-              fontSize: '10px',
-              padding: '2px 6px',
-              cursor: 'pointer',
-            },
-          },
-          '🌙'
-        ),
-        React.createElement(
-          'button',
-          {
-            onClick: handleDiaryMode,
-            title: '情绪日记',
-            style: {
-              background: 'rgba(124, 92, 252, 0.15)',
-              border: '1px solid rgba(124, 92, 252, 0.2)',
-              borderRadius: '4px',
-              color: '#B8A9FF',
-              fontSize: '10px',
-              padding: '2px 6px',
-              cursor: 'pointer',
-            },
-          },
-          '📖'
-        ),
-      )
     ),
     // Panel area
     showPanel && React.createElement(
@@ -196,6 +178,7 @@ function App() {
       mode === MODE.CHAT && React.createElement(ChatPanel, {
         onClose: closePanel,
         onAnimationChange: handleChatAnimation,
+        onModeSwitch: handleModeSwitch,
       }),
       mode === MODE.SLEEP && React.createElement(SleepPanel, {
         onClose: closePanel,

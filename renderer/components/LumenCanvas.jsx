@@ -6,17 +6,16 @@ const COLORS = {
   0: 'transparent',
   1: '#7C5CFC',   // main body (deep purple)
   2: '#B8A9FF',   // highlight (light purple)
-  3: '#E0E0FF',   // eyes (lavender white)
-  4: '#1A1A2E',   // dark (background accent)
+  3: '#000000',   // eyes (black)
+  4: '#FF69B4',   // nose (pink)
 };
 
 // PIXEL_SIZE: each pixel in the array is rendered as PIXEL_SIZE×PIXEL_SIZE real pixels
-const PIXEL_SIZE = 8;
+const PIXEL_SIZE = 2.67; // 8 / 3 ≈ 2.67
 const SPRITE_SIZE = 18; // 18×18 grid
 
 // --- Sprite Definitions ---
-// Each animation is an array of frames.
-// Each frame is an 18×18 array of color indices.
+// Pixel cat LUMEN
 
 function createEmptyFrame() {
   return Array.from({ length: SPRITE_SIZE }, () =>
@@ -30,52 +29,107 @@ function setPixel(frame, x, y, color) {
   }
 }
 
-// Build a LUMEN body shape (rounded top, flowing tail)
-function buildBodyFrame(eyeOpen = true, eyeOffsetX = 0, bodyOffsetY = 0, glow = false) {
+// Build a pixel cat sprite
+function buildCatFrame(earOffset = 0, tailWag = 0, eyesClosed = false, glow = false) {
   const f = createEmptyFrame();
-  const bodyColor = glow ? 2 : 1; // highlight when glowing
-  const highlightColor = glow ? 1 : 2;
+  const bodyColor = glow ? 2 : 1;
+  const xCenter = 9;
+  const yStart = 4;
 
-  // Head (rounded dome)
-  for (let y = 2 + bodyOffsetY; y <= 8 + bodyOffsetY; y++) {
-    const rowWidth = y <= 4 + bodyOffsetY ? 3 : 4;
-    const xCenter = 9;
-    for (let x = -rowWidth; x <= rowWidth; x++) {
-      setPixel(f, xCenter + x, y, y <= 4 + bodyOffsetY ? bodyColor : highlightColor);
-    }
+  // Ears (triangular)
+  // Left ear
+  setPixel(f, xCenter - 4 + earOffset, yStart, bodyColor);
+  setPixel(f, xCenter - 3, yStart + 1, bodyColor);
+  setPixel(f, xCenter - 4, yStart + 1, bodyColor);
+  setPixel(f, xCenter - 5, yStart + 1, bodyColor);
+
+  // Right ear
+  setPixel(f, xCenter + 4 - earOffset, yStart, bodyColor);
+  setPixel(f, xCenter + 3, yStart + 1, bodyColor);
+  setPixel(f, xCenter + 4, yStart + 1, bodyColor);
+  setPixel(f, xCenter + 5, yStart + 1, bodyColor);
+
+  // Head (round shape)
+  const headY = yStart + 2;
+  // Top of head
+  for (let x = xCenter - 3; x <= xCenter + 3; x++) {
+    setPixel(f, x, headY, bodyColor);
   }
-
-  // Body tapering down
-  for (let y = 9 + bodyOffsetY; y <= 14 + bodyOffsetY; y++) {
-    const rowWidth = Math.max(1, 5 - (y - 9 - bodyOffsetY));
-    const xCenter = 9;
-    const color = (y + bodyOffsetY) % 2 === 0 ? bodyColor : highlightColor;
-    for (let x = -rowWidth; x <= rowWidth; x++) {
-      setPixel(f, xCenter + x, y, color);
-    }
+  // Middle of head (wider)
+  for (let x = xCenter - 4; x <= xCenter + 4; x++) {
+    setPixel(f, x, headY + 1, bodyColor);
   }
-
-  // Flowing tail (bottom)
-  const tailColors = [1, 2, 1, 0];
-  for (let i = 0; i < 4; i++) {
-    const y = 15 + bodyOffsetY + i;
-    const offset = Math.floor(i / 2);
-    setPixel(f, 9 + offset, y, tailColors[i]);
-    setPixel(f, 9 - offset, y, tailColors[i]);
+  for (let x = xCenter - 4; x <= xCenter + 4; x++) {
+    setPixel(f, x, headY + 2, bodyColor);
+  }
+  // Lower head
+  for (let x = xCenter - 3; x <= xCenter + 3; x++) {
+    setPixel(f, x, headY + 3, bodyColor);
   }
 
   // Eyes
-  if (eyeOpen) {
-    const eyeY = 5 + bodyOffsetY;
-    setPixel(f, 7 + eyeOffsetX, eyeY, 3);     // left eye
-    setPixel(f, 11 + eyeOffsetX, eyeY, 3);    // right eye
-    setPixel(f, 7 + eyeOffsetX, eyeY + 1, 3); // left eye lower
-    setPixel(f, 11 + eyeOffsetX, eyeY + 1, 3);// right eye lower
+  if (!eyesClosed) {
+    setPixel(f, xCenter - 2, headY + 1, 3); // left eye
+    setPixel(f, xCenter + 2, headY + 1, 3); // right eye
   } else {
-    // Closed eyes (thin line)
-    const eyeY = 6 + bodyOffsetY;
-    setPixel(f, 7 + eyeOffsetX, eyeY, 3);
-    setPixel(f, 11 + eyeOffsetX, eyeY, 3);
+    // Closed eyes (horizontal lines)
+    setPixel(f, xCenter - 2, headY + 1, 3);
+    setPixel(f, xCenter - 1, headY + 1, 3);
+    setPixel(f, xCenter + 1, headY + 1, 3);
+    setPixel(f, xCenter + 2, headY + 1, 3);
+  }
+
+  // Nose (pink)
+  setPixel(f, xCenter, headY + 2, 4);
+
+  // Whiskers
+  // Left whiskers
+  setPixel(f, xCenter - 5, headY + 2, 2);
+  setPixel(f, xCenter - 6, headY + 2, 2);
+  // Right whiskers
+  setPixel(f, xCenter + 5, headY + 2, 2);
+  setPixel(f, xCenter + 6, headY + 2, 2);
+
+  // Body
+  const bodyY = headY + 4;
+  for (let x = xCenter - 3; x <= xCenter + 3; x++) {
+    setPixel(f, x, bodyY, bodyColor);
+  }
+  for (let x = xCenter - 3; x <= xCenter + 3; x++) {
+    setPixel(f, x, bodyY + 1, bodyColor);
+  }
+  for (let x = xCenter - 2; x <= xCenter + 2; x++) {
+    setPixel(f, x, bodyY + 2, bodyColor);
+  }
+
+  // Legs (four)
+  // Front left
+  setPixel(f, xCenter - 2, bodyY + 3, bodyColor);
+  setPixel(f, xCenter - 2, bodyY + 4, bodyColor);
+  // Front right
+  setPixel(f, xCenter + 2, bodyY + 3, bodyColor);
+  setPixel(f, xCenter + 2, bodyY + 4, bodyColor);
+  // Back left
+  setPixel(f, xCenter - 1, bodyY + 3, bodyColor);
+  setPixel(f, xCenter - 1, bodyY + 4, bodyColor);
+  // Back right
+  setPixel(f, xCenter + 1, bodyY + 3, bodyColor);
+  setPixel(f, xCenter + 1, bodyY + 4, bodyColor);
+
+  // Tail (curved)
+  const tailY = bodyY;
+  if (tailWag === 0) {
+    setPixel(f, xCenter + 4, tailY, bodyColor);
+    setPixel(f, xCenter + 5, tailY - 1, bodyColor);
+    setPixel(f, xCenter + 6, tailY - 2, bodyColor);
+  } else if (tailWag > 0) {
+    setPixel(f, xCenter + 4, tailY, bodyColor);
+    setPixel(f, xCenter + 5, tailY, bodyColor);
+    setPixel(f, xCenter + 6, tailY - 1, bodyColor);
+  } else {
+    setPixel(f, xCenter + 4, tailY, bodyColor);
+    setPixel(f, xCenter + 5, tailY + 1, bodyColor);
+    setPixel(f, xCenter + 6, tailY + 1, bodyColor);
   }
 
   return f;
@@ -85,50 +139,93 @@ function buildBodyFrame(eyeOpen = true, eyeOffsetX = 0, bodyOffsetY = 0, glow = 
 
 const ANIMATIONS = {
   idle: [
-    buildBodyFrame(true, 0, 0),
-    buildBodyFrame(true, 0, -1),
-    buildBodyFrame(true, 0, 0),
-    buildBodyFrame(true, 0, 1),
+    buildCatFrame(0, 0),
+    buildCatFrame(0, 1),
+    buildCatFrame(0, 0),
+    buildCatFrame(0, -1),
   ],
   gentle_blink: [
-    buildBodyFrame(true, 0, 0),
-    buildBodyFrame(false, 0, 0),
-    buildBodyFrame(false, 0, 0),
-    buildBodyFrame(true, 0, 0),
+    buildCatFrame(0, 0, false),
+    buildCatFrame(0, 0, true),
+    buildCatFrame(0, 0, true),
+    buildCatFrame(0, 0, false),
   ],
   eyes_half_closed: [
-    buildBodyFrame(true, 0, 0, false),
-    buildBodyFrame(true, 0, 1, false),
-    buildBodyFrame(false, 0, 0, false),
-    buildBodyFrame(false, 0, 0, false),
+    buildCatFrame(0, 0, false),
+    buildCatFrame(0, 1, false),
+    buildCatFrame(0, 0, false),
+    buildCatFrame(0, -1, false),
   ],
   slight_glow: [
-    buildBodyFrame(true, 0, -1, true),
-    buildBodyFrame(true, 0, 0, true),
-    buildBodyFrame(true, 0, 1, true),
-    buildBodyFrame(true, 0, 0, true),
+    buildCatFrame(0, 0, false, true),
+    buildCatFrame(0, 1, false, true),
+    buildCatFrame(0, 0, false, true),
+    buildCatFrame(0, -1, false, true),
   ],
   tilt_head: [
-    buildBodyFrame(true, 1, 0),
-    buildBodyFrame(true, 1, 0),
-    buildBodyFrame(true, -1, 0),
-    buildBodyFrame(true, -1, 0),
+    buildCatFrame(1, 0),
+    buildCatFrame(1, 1),
+    buildCatFrame(-1, 0),
+    buildCatFrame(-1, -1),
   ],
   flicker: [
-    buildBodyFrame(true, 0, 0, true),
-    buildBodyFrame(true, 0, 0, false),
-    buildBodyFrame(true, 0, 0, true),
-    buildBodyFrame(true, 0, 0, false),
+    buildCatFrame(0, 0, false, true),
+    buildCatFrame(0, 0, false, false),
+    buildCatFrame(0, 0, false, true),
+    buildCatFrame(0, 0, false, false),
   ],
   pulse: [
-    buildBodyFrame(true, 0, 0, false),
-    buildBodyFrame(true, 0, 0, true),
-    buildBodyFrame(true, 0, 0, false),
-    buildBodyFrame(true, 0, 0, true),
+    buildCatFrame(0, 0, false, false),
+    buildCatFrame(0, 1, false, true),
+    buildCatFrame(0, 0, false, false),
+    buildCatFrame(0, -1, false, true),
+  ],
+  // New animations
+  nod: [
+    buildCatFrame(0, 0),
+    buildCatFrame(0, 1),
+    buildCatFrame(0, 2),
+    buildCatFrame(0, 1),
+    buildCatFrame(0, 0),
+    buildCatFrame(0, -1),
+  ],
+  shake: [
+    buildCatFrame(2, 0),
+    buildCatFrame(-2, 0),
+    buildCatFrame(2, 0),
+    buildCatFrame(-2, 0),
+    buildCatFrame(0, 0),
+  ],
+  jump: [
+    buildCatFrame(0, 0),
+    buildCatFrame(0, 1, false, true),
+    buildCatFrame(0, 2, false, true),
+    buildCatFrame(0, 1, false, true),
+    buildCatFrame(0, 0),
+  ],
+  happy: [
+    buildCatFrame(0, 1, false, true),
+    buildCatFrame(0, 2, false, true),
+    buildCatFrame(0, 1, false, true),
+    buildCatFrame(0, 0, false, true),
+  ],
+  sleepy: [
+    buildCatFrame(0, 0, false),
+    buildCatFrame(0, 0, true),
+    buildCatFrame(0, 1, true),
+    buildCatFrame(0, 0, true),
+    buildCatFrame(0, 0, false),
+    buildCatFrame(0, -1, false),
+  ],
+  confused: [
+    buildCatFrame(1, 0),
+    buildCatFrame(-1, 0),
+    buildCatFrame(1, 1),
+    buildCatFrame(-1, -1),
   ],
 };
 
-function LumenCanvas({ animation = 'idle' }) {
+function LumenCanvas({ animation = 'idle', onClick }) {
   const canvasRef = useRef(null);
   const frameIndexRef = useRef(0);
   const currentAnimRef = useRef(animation);
@@ -138,6 +235,12 @@ function LumenCanvas({ animation = 'idle' }) {
     currentAnimRef.current = animation;
     frameIndexRef.current = 0;
   }, [animation]);
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    }
+  };
 
   const draw = useCallback((_delta, _frameCount) => {
     const canvas = canvasRef.current;
@@ -174,7 +277,21 @@ function LumenCanvas({ animation = 'idle' }) {
       ref={canvasRef}
       width={SPRITE_SIZE * PIXEL_SIZE}
       height={SPRITE_SIZE * PIXEL_SIZE}
-      style={{ cursor: 'pointer', display: 'block' }}
+      onClick={handleClick}
+      style={{
+        cursor: onClick ? 'pointer' : 'default',
+        display: 'block',
+        transition: 'transform 0.1s',
+      }}
+      onMouseDown={(e) => {
+        if (onClick) e.currentTarget.style.transform = 'scale(0.95)';
+      }}
+      onMouseUp={(e) => {
+        if (onClick) e.currentTarget.style.transform = 'scale(1)';
+      }}
+      onMouseLeave={(e) => {
+        if (onClick) e.currentTarget.style.transform = 'scale(1)';
+      }}
     />
   );
 }

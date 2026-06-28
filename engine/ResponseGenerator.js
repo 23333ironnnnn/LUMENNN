@@ -13,7 +13,7 @@ class ResponseGenerator {
     let text = null;
     if (this.lumenAI) {
       try {
-        text = await this.lumenAI.chat(userInput, emotion, growthLevel);
+        text = await this.lumenAI.chat(userInput, emotion);
       } catch (err) {
         console.error('AI generation failed, falling back to templates:', err.message);
       }

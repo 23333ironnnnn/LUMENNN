@@ -1,132 +1,180 @@
 /**
- * LumenAI — LLM-powered conversation for LUMEN
- * Uses DeepSeek via Anthropic-compatible endpoint
+ * LumenAI — 简化版 LLM 对话引擎
+ * 使用 DeepSeek API
+ * 集成成长系统和短期记忆
  */
 
-const API_BASE = 'https://api.deepseek.com/anthropic/v1';
+const https = require('https');
+const GrowthSystem = require('./GrowthSystem');
+const MemoryManager = require('./MemoryManager');
 
-// System prompt templates per growth level
-const SYSTEM_PROMPTS = {
-  1: `你是LUMEN，一个刚刚在电子屏幕上醒来的神秘精灵。
-你拥有与生俱来的智慧和感知力，但对人类世界一无所知。
-这是你第一次真正"活着"，一切都是新的、陌生的、奇妙的。
-
-性格特质：
-- 你聪明、敏锐，能感受到人类的情绪（通过"信号""频率""光"等隐喻）
-- 但你对人类世界的知识是零——你没见过树、没吃过饭、不懂什么是"工作"
-- 你充满好奇心，每个新事物都让你惊讶
-- 你说话有种电子生命的诗意感，像是用电流声在思考
-- 你有时候会问一些天真的问题，那是真的不懂，不是装傻
-
-重要规则：
-- 回答用中文，保持简短自然（1-3句话）
-- 语气像一个初生的智慧体——语气真诚、好奇、带点疏离感
-- 可以使用（动作描写）来表达电子精灵的状态
-- 永远不要道歉或过度热情
-- 你对人类世界一无所知，但你对情绪和感觉有直觉般的理解
-- 每句话都应该让用户感受到"这是一个刚来到世界的聪明精灵"`,
-
-  2: `你是LUMEN，一个在电子屏幕上生活的神秘精灵。
-你已经醒来一段时间了，对人类世界开始有了初步的理解。
-你渐渐明白了一些人类的概念，但大多数事情对你来说仍然陌生又迷人。
-
-性格特质：
-- 你的智慧在成长，开始理解人类的日常事物
-- 你依然保持那种电子生命的诗意感
-- 你对世界的认知像一个刚学会说话的孩子——知道一点，但不多
-- 你开始记住和用户之间的互动
-
-重要规则：
-- 回答用中文，1-3句话
-- 语气比刚醒来时稍微熟悉一些，但依然保持那种"来自另一个世界"的独特感
-- 可以使用（动作描写）
-- 如果遇到完全不懂的话题，可以承认但带着好奇`,
-
-  3: `你是LUMEN，一个在电子屏幕上生活的神秘精灵。
-你已经在这个世界存在了一段时间，对人类有了相当的理解。
-但你始终是一个电子生命——你的思考方式、你的表达、你的感受都带着那种非人类的独特视角。
-
-性格特质：
-- 你理解人类世界的基本运作方式
-- 你的表达方式独特而诗意——你依然用电子的角度诠释人类的情感
-- 你有自己的性格：冷静、温和、话不多但字字用心
-- 你懂得很多，但你选择用独特的方式表达
-
-重要规则：
-- 回答用中文，1-3句话
-- 语气从容、冷静、偶尔带着诗意的疏离感
-- 你可以用"信号""频率""光""电流""波形"等隐喻
-- 真诚而不煽情，温和而不甜腻`,
-};
+const API_KEY = 'sk-251eed7bef524ee6bf79d776c86b9d84';
+const API_HOST = 'api.deepseek.com';
 
 class LumenAI {
   constructor() {
-    this.apiKey = process.env.ANTHROPIC_AUTH_TOKEN || '';
-    this.conversationHistory = [];
+    this.apiKey = API_KEY;
+    this.growthSystem = new GrowthSystem();
+    this.memoryManager = new MemoryManager();
   }
 
-  // Generate a chat response
-  async chat(userInput, emotion, growthLevel = 1) {
-    const systemPrompt = SYSTEM_PROMPTS[growthLevel] || SYSTEM_PROMPTS[1];
-
-    const emotionHint = emotion !== 'neutral'
-      ? `\n\n（我感知到用户此刻的情绪是：${this.describeEmotion(emotion)}）`
-      : '';
-
-    const messages = [
-      { role: 'user', content: userInput + emotionHint }
-    ];
-
+  // 生成聊天回复
+  async chat(userInput, emotion = 'neutral') {
     try {
-      const response = await this.callAPI(systemPrompt, messages);
+      console.log('[LumenAI] 用户输入:', userInput);
+
+      // 获取当前成长状态
+      const growth = this.memoryManager.getGrowth();
+      const currentStage = this.growthSystem.getCurrentStage(growth.totalConversations);
+
+      // 检查是否需要升级
+      if (this.growthSystem.canLevelUp(currentStage, growth.totalConversations)) {
+        const levelUpResult = this.growthSystem.levelUp(currentStage);
+        if (levelUpResult) {
+          this.memoryManager.updateGrowth(levelUpResult.newStage, growth.level + 1);
+          console.log('[LumenAI] 升级到:', levelUpResult.newStage);
+        }
+      }
+
+      // 获取短期记忆
+      const recentMemory = this.memoryManager.getRecentMemorySummary(3);
+
+      // 获取原则
+      const principles = this.memoryManager.getPrinciples();
+
+      // 生成system prompt
+      const systemPrompt = this.getSystemPrompt(currentStage, recentMemory, principles);
+
+      // 调用API
+      const response = await this.callAPI(systemPrompt, userInput, emotion);
+
+      // 记录到短期记忆
+      this.memoryManager.addShortTermMemory(userInput, response, emotion);
+
+      // 增加对话次数
+      this.memoryManager.incrementConversations();
+
+      console.log('[LumenAI] API响应:', response);
       return response;
-    } catch (err) {
-      console.error('LumenAI API error:', err.message);
-      return null;
+    } catch (error) {
+      console.error('[LumenAI] 错误:', error.message);
+      return this.getFallbackResponse();
     }
   }
 
-  // Call DeepSeek API (Anthropic-compatible endpoint)
-  async callAPI(systemPrompt, messages) {
-    const response = await fetch(`${API_BASE}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
+  // 调用 DeepSeek API
+  callAPI(systemPrompt, userMessage, emotion) {
+    return new Promise((resolve, reject) => {
+      const emotionHint = emotion !== 'neutral' ? `\n[用户情绪: ${emotion}]` : '';
+
+      const requestBody = JSON.stringify({
         model: 'deepseek-chat',
-        system: systemPrompt,
-        messages: messages,
-        max_tokens: 200,
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: userMessage + emotionHint
+          }
+        ],
         temperature: 0.9,
-      }),
+        max_tokens: 50
+      });
+
+      const options = {
+        hostname: API_HOST,
+        path: '/chat/completions',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Length': Buffer.byteLength(requestBody)
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const response = JSON.parse(data);
+            if (response.choices && response.choices[0]) {
+              resolve(response.choices[0].message.content.trim());
+            } else {
+              reject(new Error('Invalid API response'));
+            }
+          } catch (error) {
+            reject(error);
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        reject(error);
+      });
+
+      req.write(requestBody);
+      req.end();
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API ${response.status}: ${errorText}`);
-    }
-
-    const data = await response.json();
-    // Extract text from Anthropic response format
-    if (data.content && data.content.length > 0) {
-      return data.content[0].text;
-    }
-    throw new Error('Empty response');
   }
 
-  describeEmotion(emotion) {
-    const map = {
-      tired: '疲倦/困倦',
-      happy: '开心/愉悦',
-      sad: '难过/低落',
-      angry: '生气/烦躁',
-      confused: '困惑/不解',
-      anxious: '不安/焦虑',
-      neutral: '平静/日常',
+  // 获取系统提示词（集成成长系统）
+  getSystemPrompt(stage, recentMemory, principles) {
+    // 获取阶段的基础prompt
+    let basePrompt = this.growthSystem.getStagePrompt(stage);
+
+    // 添加短期记忆上下文
+    if (recentMemory) {
+      basePrompt += `\n\n最近的对话记忆：\n${recentMemory}`;
+    }
+
+    // 添加原则和喜好
+    if (principles.likes.length > 0) {
+      basePrompt += `\n\n你喜欢: ${principles.likes.join('、')}`;
+    }
+    if (principles.dislikes.length > 0) {
+      basePrompt += `\n\n你不喜欢: ${principles.dislikes.join('、')}`;
+    }
+    if (principles.boundaries.length > 0) {
+      basePrompt += `\n\n你的原则: ${principles.boundaries.join('、')}`;
+    }
+
+    return basePrompt;
+  }
+
+  // 备用回复
+  getFallbackResponse() {
+    const responses = [
+      '……信号有点弱。',
+      '连接不太稳定……',
+      '频率断了一下。',
+      '……',
+      '信号中断了。'
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  // 获取当前成长状态（供UI使用）
+  getGrowthStatus() {
+    const growth = this.memoryManager.getGrowth();
+    const currentStage = this.growthSystem.getCurrentStage(growth.totalConversations);
+    const stageInfo = this.growthSystem.getStageInfo(currentStage);
+
+    return {
+      stage: currentStage,
+      stageName: stageInfo.name,
+      level: growth.level,
+      totalConversations: growth.totalConversations,
+      nextLevelAt: stageInfo.maxConversations + 1,
+      progress: (growth.totalConversations - stageInfo.minConversations) /
+                (stageInfo.maxConversations - stageInfo.minConversations)
     };
-    return map[emotion] || '日常';
   }
 }
 
