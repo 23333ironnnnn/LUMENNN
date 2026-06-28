@@ -124,7 +124,7 @@ npm start
 
 ### 配置 AI
 
-1. 获取 DeepSeek API Key: https://platform.deepseek.com/
+1. 获取 DeepSeek API Key: https://platform.deepseek.com/ （任意配置prefer的API探索不同性格🀄️）
 2. 修改 `engine/LumenAI.js` 中的 API_KEY
 
 ```javascript
